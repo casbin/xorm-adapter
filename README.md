@@ -1,4 +1,4 @@
-Xorm Adapter [![Godoc](https://godoc.org/github.com/casbin/xorm-adapter?status.svg)](https://godoc.org/github.com/casbin/xorm-adapter)
+Xorm Adapter [![Build Status](https://travis-ci.org/casbin/xorm-adapter.svg?branch=master)](https://travis-ci.org/casbin/xorm-adapter) [![Coverage Status](https://coveralls.io/repos/github/casbin/xorm-adapter/badge.svg?branch=master)](https://coveralls.io/github/casbin/xorm-adapter?branch=master) [![Godoc](https://godoc.org/github.com/casbin/xorm-adapter?status.svg)](https://godoc.org/github.com/casbin/xorm-adapter)
 ====
 
 Xorm Adapter is the [Xorm](https://github.com/go-xorm/xorm) adapter for [Casbin](https://github.com/casbin/casbin). With this library, Casbin can load policy from Xorm supported database or save policy to it.
