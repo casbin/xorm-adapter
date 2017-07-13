@@ -20,12 +20,12 @@ import (
 	"github.com/casbin/casbin/model"
 	"github.com/casbin/casbin/util"
 	"github.com/go-xorm/xorm"
+	"github.com/lib/pq"
 )
 
 type Rule struct {
 	Line string `xorm:"varchar(100)"`
 }
-
 
 // Adapter represents the MySQL adapter for policy storage.
 type Adapter struct {
@@ -43,22 +43,43 @@ func NewAdapter(driverName string, dataSourceName string) *Adapter {
 }
 
 func (a *Adapter) createDatabase() error {
-	engine, err := xorm.NewEngine(a.driverName, a.dataSourceName)
+	var err error
+	var engine *xorm.Engine
+	if a.driverName == "postgres" {
+		engine, err = xorm.NewEngine(a.driverName, a.dataSourceName+" dbname=postgres")
+	} else {
+		engine, err = xorm.NewEngine(a.driverName, a.dataSourceName)
+	}
 	if err != nil {
 		return err
 	}
 	defer engine.Close()
 
-	_, err = engine.Exec("CREATE DATABASE IF NOT EXISTS casbin")
+	if a.driverName == "postgres" {
+		if _, err = engine.Exec("CREATE DATABASE casbin"); err != nil {
+			// 42P04 is	duplicate_database
+			if err.(*pq.Error).Code == "42P04" {
+				return nil
+			}
+		}
+	} else {
+		_, err = engine.Exec("CREATE DATABASE IF NOT EXISTS casbin")
+	}
 	return err
 }
 
 func (a *Adapter) open() {
-	if err := a.createDatabase(); err != nil {
+	var err error
+	if err = a.createDatabase(); err != nil {
 		panic(err)
 	}
 
-	engine, err := xorm.NewEngine(a.driverName, a.dataSourceName+"casbin")
+	var engine *xorm.Engine
+	if a.driverName == "postgres" {
+		engine, err = xorm.NewEngine(a.driverName, a.dataSourceName+" dbname=casbin")
+	} else {
+		engine, err = xorm.NewEngine(a.driverName, a.dataSourceName+"casbin")
+	}
 	if err != nil {
 		panic(err)
 	}
@@ -129,14 +150,14 @@ func (a *Adapter) SavePolicy(model model.Model) error {
 	for ptype, ast := range model["p"] {
 		for _, rule := range ast.Policy {
 			tmp := ptype + ", " + util.ArrayToString(rule)
-			rules = append(rules, Rule{Line:tmp})
+			rules = append(rules, Rule{Line: tmp})
 		}
 	}
 
 	for ptype, ast := range model["g"] {
 		for _, rule := range ast.Policy {
 			tmp := ptype + ", " + util.ArrayToString(rule)
-			rules = append(rules, Rule{Line:tmp})
+			rules = append(rules, Rule{Line: tmp})
 		}
 	}
 
