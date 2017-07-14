@@ -53,7 +53,7 @@ import (
 
 func main() {
 	// Initialize a Xorm adapter and use it in a Casbin enforcer:
-	// The adapter will use the Postgrs database named casbin.
+	// The adapter will use the Postgres database named casbin.
 	// If it doesn't exist, the adapter will create it automatically.
 	a := xormadapter.NewAdapter("postgres", "user=postgres_username password=postgres_password host=127.0.0.1 port=5432 sslmode=disable") // Your driver and data source.
 	e := casbin.NewEnforcer("../examples/rbac_model.conf", a)
