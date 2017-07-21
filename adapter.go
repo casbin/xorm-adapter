@@ -183,7 +183,11 @@ func (a *Adapter) AddPolicy(sec string, ptype string, rule []string) error {
 }
 
 func (a *Adapter) RemovePolicy(sec string, ptype string, rule []string) error {
-	return errors.New("not implemented")
+	tmp := ptype + ", " + util.ArrayToString(rule)
+	line := Line{Data: tmp}
+
+	_, err := a.engine.Delete(line)
+	return err
 }
 
 func (a *Adapter) RemoveFilteredPolicy(sec string, ptype string, fieldIndex int, fieldValues ...string) error {
