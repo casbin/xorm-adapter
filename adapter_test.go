@@ -78,16 +78,16 @@ func TestAdapters(t *testing.T) {
 	testAdapter(t, "postgres", "user=postgres host=127.0.0.1 port=5432 sslmode=disable")
 }
 
-func TestAutoSave(t *testing.T) {
+func testAutoSave(t *testing.T, driverName string, dataSourceName string) {
 	// Initialize some policy in DB.
-	initPolicy(t, "mysql", "root:@tcp(127.0.0.1:3306)/")
+	initPolicy(t, driverName, dataSourceName)
 	// Note: you don't need to look at the above code
-	// if you already have a working MySQL DB with policy inside.
+	// if you already have a working DB with policy inside.
 
-	// Now the MySQL DB has policy, so we can provide a normal use case.
+	// Now the DB has policy, so we can provide a normal use case.
 	// Create an adapter and an enforcer.
 	// NewEnforcer() will load the policy automatically.
-	a := NewAdapter("mysql", "root:@tcp(127.0.0.1:3306)/")
+	a := NewAdapter(driverName, dataSourceName)
 	e := casbin.NewEnforcer("examples/rbac_model.conf", a)
 
 	// AutoSave is enabled by default.
@@ -124,4 +124,9 @@ func TestAutoSave(t *testing.T) {
 	e.LoadPolicy()
 	testGetPolicy(t, e, [][]string{{"alice", "data1", "read"}, {"bob", "data2", "write"}})
 
+}
+
+func TestAutoSaves(t *testing.T) {
+	testAutoSave(t, "mysql", "root:@tcp(127.0.0.1:3306)/")
+	testAutoSave(t, "postgres", "user=postgres host=127.0.0.1 port=5432 sslmode=disable")
 }
