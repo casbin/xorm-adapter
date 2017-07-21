@@ -25,8 +25,8 @@ import (
 	"github.com/lib/pq"
 )
 
-type Rule struct {
-	Line string `xorm:"varchar(100)"`
+type Line struct {
+	Data string `xorm:"varchar(100)"`
 }
 
 // Adapter represents the MySQL adapter for policy storage.
@@ -109,14 +109,14 @@ func (a *Adapter) close() {
 }
 
 func (a *Adapter) createTable() {
-	err := a.engine.Sync2(new(Rule))
+	err := a.engine.Sync2(new(Line))
 	if err != nil {
 		panic(err)
 	}
 }
 
 func (a *Adapter) dropTable() {
-	err := a.engine.DropTables(new(Rule))
+	err := a.engine.DropTables(new(Line))
 	if err != nil {
 		panic(err)
 	}
@@ -136,14 +136,14 @@ func loadPolicyLine(line string, model model.Model) {
 
 // LoadPolicy loads policy from database.
 func (a *Adapter) LoadPolicy(model model.Model) error {
-	var rules []Rule
-	err := a.engine.Table("rule").Find(&rules)
+	var lines []Line
+	err := a.engine.Table("line").Find(&lines)
 	if err != nil {
 		return err
 	}
 
-	for _, rule := range rules {
-		loadPolicyLine(rule.Line, model)
+	for _, line := range lines {
+		loadPolicyLine(line.Data, model)
 	}
 
 	return nil
@@ -154,23 +154,23 @@ func (a *Adapter) SavePolicy(model model.Model) error {
 	a.dropTable()
 	a.createTable()
 
-	var rules []Rule
+	var lines []Line
 
 	for ptype, ast := range model["p"] {
 		for _, rule := range ast.Policy {
 			tmp := ptype + ", " + util.ArrayToString(rule)
-			rules = append(rules, Rule{Line: tmp})
+			lines = append(lines, Line{Data: tmp})
 		}
 	}
 
 	for ptype, ast := range model["g"] {
 		for _, rule := range ast.Policy {
 			tmp := ptype + ", " + util.ArrayToString(rule)
-			rules = append(rules, Rule{Line: tmp})
+			lines = append(lines, Line{Data: tmp})
 		}
 	}
 
-	_, err := a.engine.Insert(&rules)
+	_, err := a.engine.Insert(&lines)
 	return err
 }
 
