@@ -16,6 +16,7 @@ package xormadapter
 
 import (
 	"errors"
+	"runtime"
 	"strings"
 
 	"github.com/casbin/casbin/model"
@@ -35,12 +36,24 @@ type Adapter struct {
 	engine         *xorm.Engine
 }
 
+// finalizer is the destructor for Adapter.
+func finalizer(a *Adapter) {
+	a.engine.Close()
+}
+
 // NewAdapter is the constructor for Adapter.
 func NewAdapter(driverName string, dataSourceName string) *Adapter {
-	a := Adapter{}
+	a := &Adapter{}
 	a.driverName = driverName
 	a.dataSourceName = dataSourceName
-	return &a
+
+	// Open the DB, create it if not existed.
+	a.open()
+
+	// Call the destructor when the object is released.
+	runtime.SetFinalizer(a, finalizer)
+
+	return a
 }
 
 func (a *Adapter) createDatabase() error {
@@ -92,6 +105,7 @@ func (a *Adapter) open() {
 
 func (a *Adapter) close() {
 	a.engine.Close()
+	a.engine = nil
 }
 
 func (a *Adapter) createTable() {
@@ -122,9 +136,6 @@ func loadPolicyLine(line string, model model.Model) {
 
 // LoadPolicy loads policy from database.
 func (a *Adapter) LoadPolicy(model model.Model) error {
-	a.open()
-	defer a.close()
-
 	var rules []Rule
 	err := a.engine.Table("rule").Find(&rules)
 	if err != nil {
@@ -140,9 +151,6 @@ func (a *Adapter) LoadPolicy(model model.Model) error {
 
 // SavePolicy saves policy to database.
 func (a *Adapter) SavePolicy(model model.Model) error {
-	a.open()
-	defer a.close()
-
 	a.dropTable()
 	a.createTable()
 
