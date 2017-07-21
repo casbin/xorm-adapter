@@ -59,32 +59,23 @@ func initPolicy(t *testing.T, driverName string, dataSourceName string) {
 	testGetPolicy(t, e, [][]string{{"alice", "data1", "read"}, {"bob", "data2", "write"}, {"data2_admin", "data2", "read"}, {"data2_admin", "data2", "write"}})
 }
 
-func TestMySQLAdapter(t *testing.T) {
+func testAdapter(t *testing.T, driverName string, dataSourceName string) {
 	// Initialize some policy in DB.
-	initPolicy(t, "mysql", "root:@tcp(127.0.0.1:3306)/")
+	initPolicy(t, driverName, dataSourceName)
 	// Note: you don't need to look at the above code
-	// if you already have a working MySQL DB with policy inside.
+	// if you already have a working DB with policy inside.
 
-	// Now the MySQL DB has policy, so we can provide a normal use case.
+	// Now the DB has policy, so we can provide a normal use case.
 	// Create an adapter and an enforcer.
 	// NewEnforcer() will load the policy automatically.
-	a := NewAdapter("mysql", "root:@tcp(127.0.0.1:3306)/")
+	a := NewAdapter(driverName, dataSourceName)
 	e := casbin.NewEnforcer("examples/rbac_model.conf", a)
 	testGetPolicy(t, e, [][]string{{"alice", "data1", "read"}, {"bob", "data2", "write"}, {"data2_admin", "data2", "read"}, {"data2_admin", "data2", "write"}})
 }
 
-func TestPostgresAdapter(t *testing.T) {
-	// Initialize some policy in DB.
-	initPolicy(t, "postgres", "user=postgres host=127.0.0.1 port=5432 sslmode=disable")
-	// Note: you don't need to look at the above code
-	// if you already have a working Postgres DB with policy inside.
-
-	// Now the Postgres DB has policy, so we can provide a normal use case.
-	// Create an adapter and an enforcer.
-	// NewEnforcer() will load the policy automatically.
-	a := NewAdapter("postgres", "user=postgres host=127.0.0.1 port=5432 sslmode=disable")
-	e := casbin.NewEnforcer("examples/rbac_model.conf", a)
-	testGetPolicy(t, e, [][]string{{"alice", "data1", "read"}, {"bob", "data2", "write"}, {"data2_admin", "data2", "read"}, {"data2_admin", "data2", "write"}})
+func TestAdapters(t *testing.T) {
+	testAdapter(t, "mysql", "root:@tcp(127.0.0.1:3306)/")
+	testAdapter(t, "postgres", "user=postgres host=127.0.0.1 port=5432 sslmode=disable")
 }
 
 func TestAutoSave(t *testing.T) {
