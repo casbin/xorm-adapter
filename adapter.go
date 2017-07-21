@@ -26,12 +26,12 @@ import (
 
 type Line struct {
 	PType string `xorm:"varchar(100)"`
+	V0    string `xorm:"varchar(100)"`
 	V1    string `xorm:"varchar(100)"`
 	V2    string `xorm:"varchar(100)"`
 	V3    string `xorm:"varchar(100)"`
 	V4    string `xorm:"varchar(100)"`
 	V5    string `xorm:"varchar(100)"`
-	V6    string `xorm:"varchar(100)"`
 }
 
 // Adapter represents the MySQL adapter for policy storage.
@@ -129,6 +129,9 @@ func (a *Adapter) dropTable() {
 
 func loadPolicyLine(line Line, model model.Model) {
 	lineText := line.PType
+	if line.V0 != "" {
+		lineText += ", " + line.V0
+	}
 	if line.V1 != "" {
 		lineText += ", " + line.V1
 	}
@@ -143,9 +146,6 @@ func loadPolicyLine(line Line, model model.Model) {
 	}
 	if line.V5 != "" {
 		lineText += ", " + line.V5
-	}
-	if line.V6 != "" {
-		lineText += ", " + line.V6
 	}
 
 	persist.LoadPolicyLine(lineText, model)
@@ -171,22 +171,22 @@ func savePolicyLine(ptype string, rule []string) Line {
 
 	line.PType = ptype
 	if len(rule) > 0 {
-		line.V1 = rule[0]
+		line.V0 = rule[0]
 	}
 	if len(rule) > 1 {
-		line.V2 = rule[1]
+		line.V1 = rule[1]
 	}
 	if len(rule) > 2 {
-		line.V3 = rule[2]
+		line.V2 = rule[2]
 	}
 	if len(rule) > 3 {
-		line.V4 = rule[3]
+		line.V3 = rule[3]
 	}
 	if len(rule) > 4 {
-		line.V5 = rule[4]
+		line.V4 = rule[4]
 	}
 	if len(rule) > 5 {
-		line.V6 = rule[5]
+		line.V5 = rule[5]
 	}
 
 	return line
