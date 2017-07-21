@@ -33,7 +33,7 @@ func testGetPolicy(t *testing.T, e *casbin.Enforcer, res [][]string) {
 	}
 }
 
-func TestMySQLAdapter(t *testing.T) {
+func initMySQLPolicy(t *testing.T) {
 	// Because the MySQL DB is empty at first,
 	// so we need to load the policy from the file adapter (.CSV) first.
 	e := casbin.NewEnforcer("examples/rbac_model.conf", "examples/rbac_policy.csv")
@@ -57,19 +57,9 @@ func TestMySQLAdapter(t *testing.T) {
 		panic(err)
 	}
 	testGetPolicy(t, e, [][]string{{"alice", "data1", "read"}, {"bob", "data2", "write"}, {"data2_admin", "data2", "read"}, {"data2_admin", "data2", "write"}})
-
-	// Note: you don't need to look at the above code
-	// if you already have a working MySQL DB with policy inside.
-
-	// Now the MySQL DB has policy, so we can provide a normal use case.
-	// Create an adapter and an enforcer.
-	// NewEnforcer() will load the policy automatically.
-	a = NewAdapter("mysql", "root:@tcp(127.0.0.1:3306)/")
-	e = casbin.NewEnforcer("examples/rbac_model.conf", a)
-	testGetPolicy(t, e, [][]string{{"alice", "data1", "read"}, {"bob", "data2", "write"}, {"data2_admin", "data2", "read"}, {"data2_admin", "data2", "write"}})
 }
 
-func TestPostgresAdapter(t *testing.T) {
+func initPostgresPolicy(t *testing.T) {
 	// Because the Postgres DB is empty at first,
 	// so we need to load the policy from the file adapter (.CSV) first.
 	e := casbin.NewEnforcer("examples/rbac_model.conf", "examples/rbac_policy.csv")
@@ -93,51 +83,47 @@ func TestPostgresAdapter(t *testing.T) {
 		panic(err)
 	}
 	testGetPolicy(t, e, [][]string{{"alice", "data1", "read"}, {"bob", "data2", "write"}, {"data2_admin", "data2", "read"}, {"data2_admin", "data2", "write"}})
-
-	// Note: you don't need to look at the above code
-	// if you already have a working Postgres DB with policy inside.
-
-	// Now the Postgres DB has policy, so we can provide a normal use case.
-	// Create an adapter and an enforcer.
-	// NewEnforcer() will load the policy automatically.
-	a = NewAdapter("postgres", "user=postgres host=127.0.0.1 port=5432 sslmode=disable")
-	e = casbin.NewEnforcer("examples/rbac_model.conf", a)
-	testGetPolicy(t, e, [][]string{{"alice", "data1", "read"}, {"bob", "data2", "write"}, {"data2_admin", "data2", "read"}, {"data2_admin", "data2", "write"}})
 }
 
-func TestAutoSave(t *testing.T) {
-	// Because the MySQL DB is empty at first,
-	// so we need to load the policy from the file adapter (.CSV) first.
-	e := casbin.NewEnforcer("examples/rbac_model.conf", "examples/rbac_policy.csv")
-
-	a := NewAdapter("mysql", "root:@tcp(127.0.0.1:3306)/")
-	// This is a trick to save the current policy to the MySQL DB.
-	// We can't call e.SavePolicy() because the adapter in the enforcer is still the file adapter.
-	// The current policy means the policy in the Casbin enforcer (aka in memory).
-	err := a.SavePolicy(e.GetModel())
-	if err != nil {
-		panic(err)
-	}
-
-	// Clear the current policy.
-	e.ClearPolicy()
-	testGetPolicy(t, e, [][]string{})
-
-	// Load the policy from MySQL DB.
-	err = a.LoadPolicy(e.GetModel())
-	if err != nil {
-		panic(err)
-	}
-	testGetPolicy(t, e, [][]string{{"alice", "data1", "read"}, {"bob", "data2", "write"}, {"data2_admin", "data2", "read"}, {"data2_admin", "data2", "write"}})
-
+func TestMySQLAdapter(t *testing.T) {
+	// Initialize some policy in DB.
+	initMySQLPolicy(t)
 	// Note: you don't need to look at the above code
 	// if you already have a working MySQL DB with policy inside.
 
 	// Now the MySQL DB has policy, so we can provide a normal use case.
 	// Create an adapter and an enforcer.
 	// NewEnforcer() will load the policy automatically.
-	a = NewAdapter("mysql", "root:@tcp(127.0.0.1:3306)/")
-	e = casbin.NewEnforcer("examples/rbac_model.conf", a)
+	a := NewAdapter("mysql", "root:@tcp(127.0.0.1:3306)/")
+	e := casbin.NewEnforcer("examples/rbac_model.conf", a)
+	testGetPolicy(t, e, [][]string{{"alice", "data1", "read"}, {"bob", "data2", "write"}, {"data2_admin", "data2", "read"}, {"data2_admin", "data2", "write"}})
+}
+
+func TestPostgresAdapter(t *testing.T) {
+	// Initialize some policy in DB.
+	initPostgresPolicy(t)
+	// Note: you don't need to look at the above code
+	// if you already have a working Postgres DB with policy inside.
+
+	// Now the Postgres DB has policy, so we can provide a normal use case.
+	// Create an adapter and an enforcer.
+	// NewEnforcer() will load the policy automatically.
+	a := NewAdapter("postgres", "user=postgres host=127.0.0.1 port=5432 sslmode=disable")
+	e := casbin.NewEnforcer("examples/rbac_model.conf", a)
+	testGetPolicy(t, e, [][]string{{"alice", "data1", "read"}, {"bob", "data2", "write"}, {"data2_admin", "data2", "read"}, {"data2_admin", "data2", "write"}})
+}
+
+func TestAutoSave(t *testing.T) {
+	// Initialize some policy in DB.
+	initMySQLPolicy(t)
+	// Note: you don't need to look at the above code
+	// if you already have a working MySQL DB with policy inside.
+
+	// Now the MySQL DB has policy, so we can provide a normal use case.
+	// Create an adapter and an enforcer.
+	// NewEnforcer() will load the policy automatically.
+	a := NewAdapter("mysql", "root:@tcp(127.0.0.1:3306)/")
+	e := casbin.NewEnforcer("examples/rbac_model.conf", a)
 
 	// AutoSave is enabled by default.
 	// Now we disable it.
