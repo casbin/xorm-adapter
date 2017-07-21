@@ -3,6 +3,16 @@ Xorm Adapter [![Build Status](https://travis-ci.org/casbin/xorm-adapter.svg?bran
 
 Xorm Adapter is the [Xorm](https://github.com/go-xorm/xorm) adapter for [Casbin](https://github.com/casbin/casbin). With this library, Casbin can load policy from Xorm supported database or save policy to it.
 
+Based on [Xorm Drivers Support](https://github.com/go-xorm/xorm#drivers-support), The current supported databases are:
+
+- Mysql: [github.com/go-sql-driver/mysql](https://github.com/go-sql-driver/mysql)
+- MyMysql: [github.com/ziutek/mymysql/godrv](https://github.com/ziutek/mymysql/godrv)
+- Postgres: [github.com/lib/pq](https://github.com/lib/pq)
+- Tidb: [github.com/pingcap/tidb](https://github.com/pingcap/tidb)
+- SQLite: [github.com/mattn/go-sqlite3](https://github.com/mattn/go-sqlite3)
+- MsSql: [github.com/denisenkom/go-mssqldb](https://github.com/denisenkom/go-mssqldb)
+- Oracle: [github.com/mattn/go-oci8](https://github.com/mattn/go-oci8) (experiment)
+
 ## Installation
 
     go get github.com/casbin/xorm-adapter
