@@ -127,7 +127,7 @@ func (a *Adapter) dropTable() {
 	}
 }
 
-func LoadPolicyLine(line Line, model model.Model) {
+func loadPolicyLine(line Line, model model.Model) {
 	lineText := line.PType
 	if line.V1 != "" {
 		lineText += ", " + line.V1
@@ -160,10 +160,36 @@ func (a *Adapter) LoadPolicy(model model.Model) error {
 	}
 
 	for _, line := range lines {
-		LoadPolicyLine(line, model)
+		loadPolicyLine(line, model)
 	}
 
 	return nil
+}
+
+func savePolicyLine(ptype string, rule []string) Line {
+	line := Line{}
+
+	line.PType = ptype
+	if len(rule) > 0 {
+		line.V1 = rule[0]
+	}
+	if len(rule) > 1 {
+		line.V2 = rule[1]
+	}
+	if len(rule) > 2 {
+		line.V3 = rule[2]
+	}
+	if len(rule) > 3 {
+		line.V4 = rule[3]
+	}
+	if len(rule) > 4 {
+		line.V5 = rule[4]
+	}
+	if len(rule) > 5 {
+		line.V6 = rule[5]
+	}
+
+	return line
 }
 
 // SavePolicy saves policy to database.
@@ -175,56 +201,14 @@ func (a *Adapter) SavePolicy(model model.Model) error {
 
 	for ptype, ast := range model["p"] {
 		for _, rule := range ast.Policy {
-			line := Line{}
-
-			line.PType = ptype
-			if len(rule) > 0 {
-				line.V1 = rule[0]
-			}
-			if len(rule) > 1 {
-				line.V2 = rule[1]
-			}
-			if len(rule) > 2 {
-				line.V3 = rule[2]
-			}
-			if len(rule) > 3 {
-				line.V4 = rule[3]
-			}
-			if len(rule) > 4 {
-				line.V5 = rule[4]
-			}
-			if len(rule) > 5 {
-				line.V6 = rule[5]
-			}
-
+			line := savePolicyLine(ptype, rule)
 			lines = append(lines, line)
 		}
 	}
 
 	for ptype, ast := range model["g"] {
 		for _, rule := range ast.Policy {
-			line := Line{}
-
-			line.PType = ptype
-			if len(rule) > 0 {
-				line.V1 = rule[0]
-			}
-			if len(rule) > 1 {
-				line.V2 = rule[1]
-			}
-			if len(rule) > 2 {
-				line.V3 = rule[2]
-			}
-			if len(rule) > 3 {
-				line.V4 = rule[3]
-			}
-			if len(rule) > 4 {
-				line.V5 = rule[4]
-			}
-			if len(rule) > 5 {
-				line.V6 = rule[5]
-			}
-
+			line := savePolicyLine(ptype, rule)
 			lines = append(lines, line)
 		}
 	}
