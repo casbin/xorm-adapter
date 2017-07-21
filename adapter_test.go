@@ -59,7 +59,7 @@ func initPolicy(t *testing.T, driverName string, dataSourceName string) {
 	testGetPolicy(t, e, [][]string{{"alice", "data1", "read"}, {"bob", "data2", "write"}, {"data2_admin", "data2", "read"}, {"data2_admin", "data2", "write"}})
 }
 
-func testAdapter(t *testing.T, driverName string, dataSourceName string) {
+func testSaveLoad(t *testing.T, driverName string, dataSourceName string) {
 	// Initialize some policy in DB.
 	initPolicy(t, driverName, dataSourceName)
 	// Note: you don't need to look at the above code
@@ -71,11 +71,6 @@ func testAdapter(t *testing.T, driverName string, dataSourceName string) {
 	a := NewAdapter(driverName, dataSourceName)
 	e := casbin.NewEnforcer("examples/rbac_model.conf", a)
 	testGetPolicy(t, e, [][]string{{"alice", "data1", "read"}, {"bob", "data2", "write"}, {"data2_admin", "data2", "read"}, {"data2_admin", "data2", "write"}})
-}
-
-func TestAdapters(t *testing.T) {
-	testAdapter(t, "mysql", "root:@tcp(127.0.0.1:3306)/")
-	testAdapter(t, "postgres", "user=postgres host=127.0.0.1 port=5432 sslmode=disable")
 }
 
 func testAutoSave(t *testing.T, driverName string, dataSourceName string) {
@@ -126,7 +121,10 @@ func testAutoSave(t *testing.T, driverName string, dataSourceName string) {
 
 }
 
-func TestAutoSaves(t *testing.T) {
+func TestAdapters(t *testing.T) {
+	testSaveLoad(t, "mysql", "root:@tcp(127.0.0.1:3306)/")
+	testSaveLoad(t, "postgres", "user=postgres host=127.0.0.1 port=5432 sslmode=disable")
+
 	testAutoSave(t, "mysql", "root:@tcp(127.0.0.1:3306)/")
 	testAutoSave(t, "postgres", "user=postgres host=127.0.0.1 port=5432 sslmode=disable")
 }
