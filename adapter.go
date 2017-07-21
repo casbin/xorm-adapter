@@ -15,6 +15,7 @@
 package xormadapter
 
 import (
+	"errors"
 	"strings"
 
 	"github.com/casbin/casbin/model"
@@ -163,4 +164,16 @@ func (a *Adapter) SavePolicy(model model.Model) error {
 
 	_, err := a.engine.Insert(&rules)
 	return err
+}
+
+func (a *Adapter) AddPolicy(sec string, ptype string, policy []string) error {
+	return errors.New("not implemented")
+}
+
+func (a *Adapter) RemovePolicy(sec string, ptype string, policy []string) error {
+	return errors.New("not implemented")
+}
+
+func (a *Adapter) RemoveFilteredPolicy(sec string, ptype string, fieldIndex int, fieldValues ...string) error {
+	return errors.New("not implemented")
 }
