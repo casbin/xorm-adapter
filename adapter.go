@@ -20,13 +20,18 @@ import (
 
 	"github.com/casbin/casbin/model"
 	"github.com/casbin/casbin/persist"
-	"github.com/casbin/casbin/util"
 	"github.com/go-xorm/xorm"
 	"github.com/lib/pq"
 )
 
 type Line struct {
-	Data string `xorm:"varchar(100)"`
+	PType string `xorm:"varchar(100)"`
+	V1    string `xorm:"varchar(100)"`
+	V2    string `xorm:"varchar(100)"`
+	V3    string `xorm:"varchar(100)"`
+	V4    string `xorm:"varchar(100)"`
+	V5    string `xorm:"varchar(100)"`
+	V6    string `xorm:"varchar(100)"`
 }
 
 // Adapter represents the MySQL adapter for policy storage.
@@ -122,6 +127,30 @@ func (a *Adapter) dropTable() {
 	}
 }
 
+func LoadPolicyLine(line Line, model model.Model) {
+	lineText := line.PType
+	if line.V1 != "" {
+		lineText += ", " + line.V1
+	}
+	if line.V2 != "" {
+		lineText += ", " + line.V2
+	}
+	if line.V3 != "" {
+		lineText += ", " + line.V3
+	}
+	if line.V4 != "" {
+		lineText += ", " + line.V4
+	}
+	if line.V5 != "" {
+		lineText += ", " + line.V5
+	}
+	if line.V6 != "" {
+		lineText += ", " + line.V6
+	}
+
+	persist.LoadPolicyLine(lineText, model)
+}
+
 // LoadPolicy loads policy from database.
 func (a *Adapter) LoadPolicy(model model.Model) error {
 	var lines []Line
@@ -131,7 +160,7 @@ func (a *Adapter) LoadPolicy(model model.Model) error {
 	}
 
 	for _, line := range lines {
-		persist.LoadPolicyLine(line.Data, model)
+		LoadPolicyLine(line, model)
 	}
 
 	return nil
@@ -146,15 +175,57 @@ func (a *Adapter) SavePolicy(model model.Model) error {
 
 	for ptype, ast := range model["p"] {
 		for _, rule := range ast.Policy {
-			tmp := ptype + ", " + util.ArrayToString(rule)
-			lines = append(lines, Line{Data: tmp})
+			line := Line{}
+
+			line.PType = ptype
+			if len(rule) > 0 {
+				line.V1 = rule[0]
+			}
+			if len(rule) > 1 {
+				line.V2 = rule[1]
+			}
+			if len(rule) > 2 {
+				line.V3 = rule[2]
+			}
+			if len(rule) > 3 {
+				line.V4 = rule[3]
+			}
+			if len(rule) > 4 {
+				line.V5 = rule[4]
+			}
+			if len(rule) > 5 {
+				line.V6 = rule[5]
+			}
+
+			lines = append(lines, line)
 		}
 	}
 
 	for ptype, ast := range model["g"] {
 		for _, rule := range ast.Policy {
-			tmp := ptype + ", " + util.ArrayToString(rule)
-			lines = append(lines, Line{Data: tmp})
+			line := Line{}
+
+			line.PType = ptype
+			if len(rule) > 0 {
+				line.V1 = rule[0]
+			}
+			if len(rule) > 1 {
+				line.V2 = rule[1]
+			}
+			if len(rule) > 2 {
+				line.V3 = rule[2]
+			}
+			if len(rule) > 3 {
+				line.V4 = rule[3]
+			}
+			if len(rule) > 4 {
+				line.V5 = rule[4]
+			}
+			if len(rule) > 5 {
+				line.V6 = rule[5]
+			}
+
+			lines = append(lines, line)
 		}
 	}
 
@@ -163,19 +234,11 @@ func (a *Adapter) SavePolicy(model model.Model) error {
 }
 
 func (a *Adapter) AddPolicy(sec string, ptype string, rule []string) error {
-	tmp := ptype + ", " + util.ArrayToString(rule)
-	line := Line{Data: tmp}
-
-	_, err := a.engine.Insert(line)
-	return err
+	return errors.New("not implemented")
 }
 
 func (a *Adapter) RemovePolicy(sec string, ptype string, rule []string) error {
-	tmp := ptype + ", " + util.ArrayToString(rule)
-	line := Line{Data: tmp}
-
-	_, err := a.engine.Delete(line)
-	return err
+	return errors.New("not implemented")
 }
 
 func (a *Adapter) RemoveFilteredPolicy(sec string, ptype string, fieldIndex int, fieldValues ...string) error {
