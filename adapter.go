@@ -218,11 +218,15 @@ func (a *Adapter) SavePolicy(model model.Model) error {
 }
 
 func (a *Adapter) AddPolicy(sec string, ptype string, rule []string) error {
-	return errors.New("not implemented")
+	line := savePolicyLine(ptype, rule)
+	_, err := a.engine.Insert(line)
+	return err
 }
 
 func (a *Adapter) RemovePolicy(sec string, ptype string, rule []string) error {
-	return errors.New("not implemented")
+	line := savePolicyLine(ptype, rule)
+	_, err := a.engine.Delete(line)
+	return err
 }
 
 func (a *Adapter) RemoveFilteredPolicy(sec string, ptype string, fieldIndex int, fieldValues ...string) error {

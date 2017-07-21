@@ -146,7 +146,7 @@ func TestAutoSave(t *testing.T) {
 	// Reload the policy from the storage to see the effect.
 	e.LoadPolicy()
 	// The policy has a new rule: "alice", "data1", "write"
-	testGetPolicy(t, e, [][]string{{"alice", "data1", "read"}, {"bob", "data2", "write"}, {"data2_admin", "data2", "read"}, {"data2_admin", "data2", "write"}})
+	testGetPolicy(t, e, [][]string{{"alice", "data1", "read"}, {"bob", "data2", "write"}, {"data2_admin", "data2", "read"}, {"data2_admin", "data2", "write"}, {"alice", "data1", "write"}})
 
 	// Remove the added policy.
 	e.RemovePolicy("alice", "data1", "write")
