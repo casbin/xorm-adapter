@@ -33,7 +33,7 @@ type Line struct {
 	V5    string `xorm:"varchar(100)"`
 }
 
-// Adapter represents the MySQL adapter for policy storage.
+// Adapter represents the Xorm adapter for policy storage.
 type Adapter struct {
 	driverName     string
 	dataSourceName string
