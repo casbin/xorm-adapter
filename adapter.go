@@ -24,7 +24,7 @@ import (
 	"github.com/lib/pq"
 )
 
-type Line struct {
+type CasbinRule struct {
 	PType string `xorm:"varchar(100)"`
 	V0    string `xorm:"varchar(100)"`
 	V1    string `xorm:"varchar(100)"`
@@ -139,20 +139,20 @@ func (a *Adapter) close() {
 }
 
 func (a *Adapter) createTable() {
-	err := a.engine.Sync2(new(Line))
+	err := a.engine.Sync2(new(CasbinRule))
 	if err != nil {
 		panic(err)
 	}
 }
 
 func (a *Adapter) dropTable() {
-	err := a.engine.DropTables(new(Line))
+	err := a.engine.DropTables(new(CasbinRule))
 	if err != nil {
 		panic(err)
 	}
 }
 
-func loadPolicyLine(line Line, model model.Model) {
+func loadPolicyLine(line CasbinRule, model model.Model) {
 	lineText := line.PType
 	if line.V0 != "" {
 		lineText += ", " + line.V0
@@ -178,8 +178,8 @@ func loadPolicyLine(line Line, model model.Model) {
 
 // LoadPolicy loads policy from database.
 func (a *Adapter) LoadPolicy(model model.Model) error {
-	var lines []Line
-	err := a.engine.Table("line").Find(&lines)
+	var lines []CasbinRule
+	err := a.engine.Find(&lines)
 	if err != nil {
 		return err
 	}
@@ -191,8 +191,8 @@ func (a *Adapter) LoadPolicy(model model.Model) error {
 	return nil
 }
 
-func savePolicyLine(ptype string, rule []string) Line {
-	line := Line{}
+func savePolicyLine(ptype string, rule []string) CasbinRule {
+	line := CasbinRule{}
 
 	line.PType = ptype
 	if len(rule) > 0 {
@@ -222,7 +222,7 @@ func (a *Adapter) SavePolicy(model model.Model) error {
 	a.dropTable()
 	a.createTable()
 
-	var lines []Line
+	var lines []CasbinRule
 
 	for ptype, ast := range model["p"] {
 		for _, rule := range ast.Policy {
@@ -258,7 +258,7 @@ func (a *Adapter) RemovePolicy(sec string, ptype string, rule []string) error {
 
 // RemoveFilteredPolicy removes policy rules that match the filter from the storage.
 func (a *Adapter) RemoveFilteredPolicy(sec string, ptype string, fieldIndex int, fieldValues ...string) error {
-	line := Line{}
+	line := CasbinRule{}
 
 	line.PType = ptype
 	if fieldIndex <= 0 && 0 < fieldIndex + len(fieldValues) {
