@@ -15,6 +15,8 @@
 package xormadapter
 
 import (
+	"errors"
+	"regexp"
 	"runtime"
 
 	"github.com/casbin/casbin/model"
@@ -37,6 +39,8 @@ type Line struct {
 type Adapter struct {
 	driverName     string
 	dataSourceName string
+	dbName         string
+	dbSpecified    bool
 	engine         *xorm.Engine
 }
 
@@ -45,11 +49,40 @@ func finalizer(a *Adapter) {
 	a.engine.Close()
 }
 
+func parseDBName(driverName string, dataSourceName string) string {
+	var re *regexp.Regexp
+	if driverName == "mysql" {
+		re = regexp.MustCompile(`/([^\?]+)`)
+	} else {
+		return ""
+	}
+
+	submatches := re.FindStringSubmatch(dataSourceName)
+	if len(submatches) == 0 {
+		return ""
+	} else if len(submatches) == 2 {
+		return submatches[1]
+	} else {
+		panic(errors.New("cannot parse database name from data source string"))
+	}
+}
+
 // NewAdapter is the constructor for Adapter.
+// You can specify the DB name in dataSourceName or not:
+// If DB name is specified, the DB should already exist. (This is only supported for MySQL for now)
+// If DB name is not specified, the adapter will automatically create a DB named "casbin".
 func NewAdapter(driverName string, dataSourceName string) *Adapter {
 	a := &Adapter{}
 	a.driverName = driverName
 	a.dataSourceName = dataSourceName
+
+	a.dbName = parseDBName(driverName, dataSourceName)
+	if a.dbName == "" {
+		a.dbSpecified = false
+		a.dbName = "casbin"
+	} else {
+		a.dbSpecified = true
+	}
 
 	// Open the DB, create it if not existed.
 	a.open()
@@ -74,32 +107,45 @@ func (a *Adapter) createDatabase() error {
 	defer engine.Close()
 
 	if a.driverName == "postgres" {
-		if _, err = engine.Exec("CREATE DATABASE casbin"); err != nil {
+		if _, err = engine.Exec("CREATE DATABASE " + a.dbName); err != nil {
 			// 42P04 is	duplicate_database
 			if err.(*pq.Error).Code == "42P04" {
 				return nil
 			}
 		}
 	} else {
-		_, err = engine.Exec("CREATE DATABASE IF NOT EXISTS casbin")
+		_, err = engine.Exec("CREATE DATABASE IF NOT EXISTS " + a.dbName)
 	}
 	return err
 }
 
 func (a *Adapter) open() {
 	var err error
-	if err = a.createDatabase(); err != nil {
-		panic(err)
-	}
-
 	var engine *xorm.Engine
-	if a.driverName == "postgres" {
-		engine, err = xorm.NewEngine(a.driverName, a.dataSourceName+" dbname=casbin")
+
+	if a.dbSpecified {
+		if a.driverName == "postgres" {
+			engine, err = xorm.NewEngine(a.driverName, a.dataSourceName)
+		} else {
+			engine, err = xorm.NewEngine(a.driverName, a.dataSourceName)
+		}
+		if err != nil {
+			panic(err)
+		}
 	} else {
-		engine, err = xorm.NewEngine(a.driverName, a.dataSourceName+"casbin")
-	}
-	if err != nil {
-		panic(err)
+		err = a.createDatabase()
+		if err != nil {
+			panic(err)
+		}
+
+		if a.driverName == "postgres" {
+			engine, err = xorm.NewEngine(a.driverName, a.dataSourceName + " dbname=" + a.dbName)
+		} else {
+			engine, err = xorm.NewEngine(a.driverName, a.dataSourceName + a.dbName)
+		}
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	a.engine = engine

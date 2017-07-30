@@ -128,3 +128,19 @@ func TestAdapters(t *testing.T) {
 	testAutoSave(t, "mysql", "root:@tcp(127.0.0.1:3306)/")
 	testAutoSave(t, "postgres", "user=postgres host=127.0.0.1 port=5432 sslmode=disable")
 }
+
+func testStringEquals(t *testing.T, a string, b string, res bool) {
+	myRes := a == b
+	log.Printf("%s == %s: %t", a, b, myRes)
+
+	if myRes != res {
+		t.Errorf("%s == %s: %t, supposed to be %t", a, b, myRes, res)
+	}
+}
+
+func TestParseDBName(t *testing.T) {
+	testStringEquals(t, parseDBName("mysql", "root:@tcp(127.0.0.1:3306)/casbin"), "casbin", true)
+	testStringEquals(t, parseDBName("mysql", "root:@tcp(127.0.0.1:3306)"), "", true)
+	testStringEquals(t, parseDBName("mysql", "root:@tcp(127.0.0.1:3306)/"), "", true)
+	testStringEquals(t, parseDBName("mysql", "user:password@/dbname?charset=utf8&parseTime=True&loc=Local"), "dbname", true)
+}
