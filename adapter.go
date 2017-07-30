@@ -15,6 +15,7 @@
 package xormadapter
 
 import (
+	"errors"
 	"runtime"
 
 	"github.com/casbin/casbin/model"
@@ -37,6 +38,7 @@ type Line struct {
 type Adapter struct {
 	driverName     string
 	dataSourceName string
+	dbSpecified    bool
 	engine         *xorm.Engine
 }
 
@@ -46,10 +48,22 @@ func finalizer(a *Adapter) {
 }
 
 // NewAdapter is the constructor for Adapter.
-func NewAdapter(driverName string, dataSourceName string) *Adapter {
+// dbSpecified is an optional bool parameter. The default value is false.
+// It's up to whether you have specified an existing DB in dataSourceName.
+// If dbSpecified == true, you need to make sure the DB in dataSourceName exists.
+// If dbSpecified == false, the adapter will automatically create a DB named "casbin".
+func NewAdapter(driverName string, dataSourceName string, dbSpecified ...bool) *Adapter {
 	a := &Adapter{}
 	a.driverName = driverName
 	a.dataSourceName = dataSourceName
+
+	if len(dbSpecified) == 0 {
+		a.dbSpecified = false
+	} else if len(dbSpecified) == 1 {
+		a.dbSpecified = dbSpecified[0]
+	} else {
+		panic(errors.New("invalid parameter: dbSpecified"))
+	}
 
 	// Open the DB, create it if not existed.
 	a.open()
@@ -88,18 +102,30 @@ func (a *Adapter) createDatabase() error {
 
 func (a *Adapter) open() {
 	var err error
-	if err = a.createDatabase(); err != nil {
-		panic(err)
-	}
-
 	var engine *xorm.Engine
-	if a.driverName == "postgres" {
-		engine, err = xorm.NewEngine(a.driverName, a.dataSourceName+" dbname=casbin")
+
+	if a.dbSpecified {
+		if a.driverName == "postgres" {
+			engine, err = xorm.NewEngine(a.driverName, a.dataSourceName)
+		} else {
+			engine, err = xorm.NewEngine(a.driverName, a.dataSourceName)
+		}
+		if err != nil {
+			panic(err)
+		}
 	} else {
-		engine, err = xorm.NewEngine(a.driverName, a.dataSourceName+"casbin")
-	}
-	if err != nil {
-		panic(err)
+		if err = a.createDatabase(); err != nil {
+			panic(err)
+		}
+
+		if a.driverName == "postgres" {
+			engine, err = xorm.NewEngine(a.driverName, a.dataSourceName+" dbname=casbin")
+		} else {
+			engine, err = xorm.NewEngine(a.driverName, a.dataSourceName+"casbin")
+		}
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	a.engine = engine
