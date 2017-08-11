@@ -105,11 +105,7 @@ func (a *Adapter) open() {
 	var engine *xorm.Engine
 
 	if a.dbSpecified {
-		if a.driverName == "postgres" {
-			engine, err = xorm.NewEngine(a.driverName, a.dataSourceName)
-		} else {
-			engine, err = xorm.NewEngine(a.driverName, a.dataSourceName)
-		}
+		engine, err = xorm.NewEngine(a.driverName, a.dataSourceName)
 		if err != nil {
 			panic(err)
 		}
