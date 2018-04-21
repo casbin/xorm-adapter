@@ -25,6 +25,7 @@ import (
 )
 
 func testGetPolicy(t *testing.T, e *casbin.Enforcer, res [][]string) {
+	t.Helper()
 	myRes := e.GetPolicy()
 	log.Print("Policy: ", myRes)
 
