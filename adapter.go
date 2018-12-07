@@ -90,7 +90,7 @@ func (a *Adapter) createDatabase() error {
 	if a.driverName == "postgres" {
 		if _, err = engine.Exec("CREATE DATABASE casbin"); err != nil {
 			// 42P04 is	duplicate_database
-			if err.(*pq.Error).Code == "42P04" {
+			if pqerr, ok := err.(*pq.Error); ok && pqerr.Code == "42P04" {
 				return nil
 			}
 		}
