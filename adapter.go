@@ -25,13 +25,13 @@ import (
 )
 
 type CasbinRule struct {
-	PType string `xorm:"varchar(100) index"`
-	V0    string `xorm:"varchar(100) index"`
-	V1    string `xorm:"varchar(100) index"`
-	V2    string `xorm:"varchar(100) index"`
-	V3    string `xorm:"varchar(100) index"`
-	V4    string `xorm:"varchar(100) index"`
-	V5    string `xorm:"varchar(100) index"`
+	Ptype string `xorm:"varchar(4) index not null default ''"`
+	V0    string `xorm:"varchar(100) index not null default ''"`
+	V1    string `xorm:"varchar(100) index not null default ''"`
+	V2    string `xorm:"varchar(100) index not null default ''"`
+	V3    string `xorm:"varchar(100) index not null default ''"`
+	V4    string `xorm:"varchar(100) index not null default ''"`
+	V5    string `xorm:"varchar(100) index not null default ''"`
 }
 
 // Adapter represents the Xorm adapter for policy storage.
@@ -135,8 +135,7 @@ func (a *Adapter) close() {
 }
 
 func (a *Adapter) createTable() {
-	err := a.engine.Sync2(new(CasbinRule))
-	if err != nil {
+	if err := a.engine.Sync2(new(CasbinRule)); err != nil {
 		panic(err)
 	}
 }
@@ -148,35 +147,35 @@ func (a *Adapter) dropTable() {
 	}
 }
 
-func loadPolicyLine(line CasbinRule, model model.Model) {
-	lineText := line.PType
-	if line.V0 != "" {
-		lineText += ", " + line.V0
-	}
-	if line.V1 != "" {
-		lineText += ", " + line.V1
-	}
-	if line.V2 != "" {
-		lineText += ", " + line.V2
-	}
-	if line.V3 != "" {
-		lineText += ", " + line.V3
-	}
-	if line.V4 != "" {
-		lineText += ", " + line.V4
-	}
-	if line.V5 != "" {
-		lineText += ", " + line.V5
-	}
+const prefixLine = ", "
 
+func loadPolicyLine(line *CasbinRule, model model.Model) {
+	lineText := line.Ptype
+	if len(line.V0) > 0 {
+		lineText += prefixLine + line.V0
+	}
+	if len(line.V1) > 0 {
+		lineText += prefixLine + line.V1
+	}
+	if len(line.V2) > 0 {
+		lineText += prefixLine + line.V2
+	}
+	if len(line.V3) > 0 {
+		lineText += prefixLine + line.V3
+	}
+	if len(line.V4) > 0 {
+		lineText += prefixLine + line.V4
+	}
+	if len(line.V5) > 0 {
+		lineText += prefixLine + line.V5
+	}
 	persist.LoadPolicyLine(lineText, model)
 }
 
 // LoadPolicy loads policy from database.
 func (a *Adapter) LoadPolicy(model model.Model) error {
-	var lines []CasbinRule
-	err := a.engine.Find(&lines)
-	if err != nil {
+	var lines []*CasbinRule
+	if err := a.engine.Find(&lines); err != nil {
 		return err
 	}
 
@@ -187,26 +186,26 @@ func (a *Adapter) LoadPolicy(model model.Model) error {
 	return nil
 }
 
-func savePolicyLine(ptype string, rule []string) CasbinRule {
-	line := CasbinRule{}
+func savePolicyLine(ptype string, rule []string) *CasbinRule {
+	line := &CasbinRule{Ptype: ptype}
 
-	line.PType = ptype
-	if len(rule) > 0 {
+	l := len(rule)
+	if l > 0 {
 		line.V0 = rule[0]
 	}
-	if len(rule) > 1 {
+	if l > 1 {
 		line.V1 = rule[1]
 	}
-	if len(rule) > 2 {
+	if l > 2 {
 		line.V2 = rule[2]
 	}
-	if len(rule) > 3 {
+	if l > 3 {
 		line.V3 = rule[3]
 	}
-	if len(rule) > 4 {
+	if l > 4 {
 		line.V4 = rule[4]
 	}
-	if len(rule) > 5 {
+	if l > 5 {
 		line.V5 = rule[5]
 	}
 
@@ -218,7 +217,7 @@ func (a *Adapter) SavePolicy(model model.Model) error {
 	a.dropTable()
 	a.createTable()
 
-	var lines []CasbinRule
+	var lines []*CasbinRule
 
 	for ptype, ast := range model["p"] {
 		for _, rule := range ast.Policy {
@@ -254,26 +253,26 @@ func (a *Adapter) RemovePolicy(sec string, ptype string, rule []string) error {
 
 // RemoveFilteredPolicy removes policy rules that match the filter from the storage.
 func (a *Adapter) RemoveFilteredPolicy(sec string, ptype string, fieldIndex int, fieldValues ...string) error {
-	line := CasbinRule{}
+	line := &CasbinRule{Ptype: ptype}
 
-	line.PType = ptype
-	if fieldIndex <= 0 && 0 < fieldIndex + len(fieldValues) {
-		line.V0 = fieldValues[0 - fieldIndex]
+	idx := fieldIndex + len(fieldValues)
+	if fieldIndex <= 0 && idx > 0 {
+		line.V0 = fieldValues[0-fieldIndex]
 	}
-	if fieldIndex <= 1 && 1 < fieldIndex + len(fieldValues) {
-		line.V1 = fieldValues[1 - fieldIndex]
+	if fieldIndex <= 1 && idx > 1 {
+		line.V1 = fieldValues[1-fieldIndex]
 	}
-	if fieldIndex <= 2 && 2 < fieldIndex + len(fieldValues) {
-		line.V2 = fieldValues[2 - fieldIndex]
+	if fieldIndex <= 2 && idx > 2 {
+		line.V2 = fieldValues[2-fieldIndex]
 	}
-	if fieldIndex <= 3 && 3 < fieldIndex + len(fieldValues) {
-		line.V3 = fieldValues[3 - fieldIndex]
+	if fieldIndex <= 3 && idx > 3 {
+		line.V3 = fieldValues[3-fieldIndex]
 	}
-	if fieldIndex <= 4 && 4 < fieldIndex + len(fieldValues) {
-		line.V4 = fieldValues[4 - fieldIndex]
+	if fieldIndex <= 4 && idx > 4 {
+		line.V4 = fieldValues[4-fieldIndex]
 	}
-	if fieldIndex <= 5 && 5 < fieldIndex + len(fieldValues) {
-		line.V5 = fieldValues[5 - fieldIndex]
+	if fieldIndex <= 5 && idx > 5 {
+		line.V5 = fieldValues[5-fieldIndex]
 	}
 
 	_, err := a.engine.Delete(line)
