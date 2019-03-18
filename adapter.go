@@ -94,7 +94,7 @@ func (a *Adapter) createDatabase() error {
 				return nil
 			}
 		}
-	} else {
+	} else if a.driverName != "sqlite3" {
 		_, err = engine.Exec("CREATE DATABASE IF NOT EXISTS casbin")
 	}
 	return err
@@ -116,6 +116,8 @@ func (a *Adapter) open() {
 
 		if a.driverName == "postgres" {
 			engine, err = xorm.NewEngine(a.driverName, a.dataSourceName+" dbname=casbin")
+		} else if a.driverName == "sqlite3" {
+			engine, err = xorm.NewEngine(a.driverName, a.dataSourceName)
 		} else {
 			engine, err = xorm.NewEngine(a.driverName, a.dataSourceName+"casbin")
 		}
