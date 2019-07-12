@@ -44,7 +44,10 @@ type Adapter struct {
 
 // finalizer is the destructor for Adapter.
 func finalizer(a *Adapter) {
-	a.engine.Close()
+	err := a.engine.Close()
+	if err != nil {
+		panic(err)
+	}
 }
 
 // NewAdapter is the constructor for Adapter.
@@ -52,7 +55,7 @@ func finalizer(a *Adapter) {
 // It's up to whether you have specified an existing DB in dataSourceName.
 // If dbSpecified == true, you need to make sure the DB in dataSourceName exists.
 // If dbSpecified == false, the adapter will automatically create a DB named "casbin".
-func NewAdapter(driverName string, dataSourceName string, dbSpecified ...bool) *Adapter {
+func NewAdapter(driverName string, dataSourceName string, dbSpecified ...bool) (*Adapter, error) {
 	a := &Adapter{}
 	a.driverName = driverName
 	a.dataSourceName = dataSourceName
@@ -62,24 +65,32 @@ func NewAdapter(driverName string, dataSourceName string, dbSpecified ...bool) *
 	} else if len(dbSpecified) == 1 {
 		a.dbSpecified = dbSpecified[0]
 	} else {
-		panic(errors.New("invalid parameter: dbSpecified"))
+		return nil, errors.New("invalid parameter: dbSpecified")
 	}
 
 	// Open the DB, create it if not existed.
-	a.open()
+	err := a.open()
+	if err != nil {
+		return nil, err
+	}
 
 	// Call the destructor when the object is released.
 	runtime.SetFinalizer(a, finalizer)
 
-	return a
+	return a, nil
 }
 
-func NewAdapterByEngine(engine *xorm.Engine) *Adapter {
+func NewAdapterByEngine(engine *xorm.Engine) (*Adapter, error) {
 	a := &Adapter{
 		engine: engine,
 	}
-	a.createTable()
-	return a
+
+	err := a.createTable()
+	if err != nil {
+		return nil, err
+	}
+
+	return a, nil
 }
 
 func (a *Adapter) createDatabase() error {
@@ -93,33 +104,38 @@ func (a *Adapter) createDatabase() error {
 	if err != nil {
 		return err
 	}
-	defer engine.Close()
 
 	if a.driverName == "postgres" {
 		if _, err = engine.Exec("CREATE DATABASE casbin"); err != nil {
 			// 42P04 is	duplicate_database
 			if pqerr, ok := err.(*pq.Error); ok && pqerr.Code == "42P04" {
+				engine.Close()
 				return nil
 			}
 		}
 	} else if a.driverName != "sqlite3" {
 		_, err = engine.Exec("CREATE DATABASE IF NOT EXISTS casbin")
 	}
-	return err
+	if err != nil {
+		engine.Close()
+		return err
+	}
+
+	return engine.Close()
 }
 
-func (a *Adapter) open() {
+func (a *Adapter) open() error {
 	var err error
 	var engine *xorm.Engine
 
 	if a.dbSpecified {
 		engine, err = xorm.NewEngine(a.driverName, a.dataSourceName)
 		if err != nil {
-			panic(err)
+			return err
 		}
 	} else {
 		if err = a.createDatabase(); err != nil {
-			panic(err)
+			return err
 		}
 
 		if a.driverName == "postgres" {
@@ -130,32 +146,31 @@ func (a *Adapter) open() {
 			engine, err = xorm.NewEngine(a.driverName, a.dataSourceName+"casbin")
 		}
 		if err != nil {
-			panic(err)
+			return err
 		}
 	}
 
 	a.engine = engine
 
-	a.createTable()
+	return a.createTable()
 }
 
-func (a *Adapter) close() {
-	a.engine.Close()
+func (a *Adapter) close() error {
+	err := a.engine.Close()
+	if err != nil {
+		return err
+	}
+
 	a.engine = nil
+	return nil
 }
 
-func (a *Adapter) createTable() {
-	err := a.engine.Sync2(new(CasbinRule))
-	if err != nil {
-		panic(err)
-	}
+func (a *Adapter) createTable() error {
+	return a.engine.Sync2(new(CasbinRule))
 }
 
-func (a *Adapter) dropTable() {
-	err := a.engine.DropTables(new(CasbinRule))
-	if err != nil {
-		panic(err)
-	}
+func (a *Adapter) dropTable() error {
+	return a.engine.DropTables(new(CasbinRule))
 }
 
 func loadPolicyLine(line CasbinRule, model model.Model) {
@@ -225,8 +240,14 @@ func savePolicyLine(ptype string, rule []string) CasbinRule {
 
 // SavePolicy saves policy to database.
 func (a *Adapter) SavePolicy(model model.Model) error {
-	a.dropTable()
-	a.createTable()
+	err := a.dropTable()
+	if err != nil {
+		return err
+	}
+	err = a.createTable()
+	if err != nil {
+		return err
+	}
 
 	var lines []CasbinRule
 
@@ -244,7 +265,7 @@ func (a *Adapter) SavePolicy(model model.Model) error {
 		}
 	}
 
-	_, err := a.engine.Insert(&lines)
+	_, err = a.engine.Insert(&lines)
 	return err
 }
 
