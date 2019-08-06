@@ -17,9 +17,10 @@ package xormadapter
 import (
 	"errors"
 	"runtime"
+	"strings"
 
-	"github.com/casbin/casbin/model"
-	"github.com/casbin/casbin/persist"
+	"github.com/casbin/casbin/v2/model"
+	"github.com/casbin/casbin/v2/persist"
 	"github.com/go-xorm/xorm"
 	"github.com/lib/pq"
 )
@@ -175,28 +176,35 @@ func (a *Adapter) dropTable() error {
 
 func loadPolicyLine(line *CasbinRule, model model.Model) {
 	const prefixLine = ", "
+	var sb strings.Builder
 
-	lineText := line.PType
+	sb.WriteString(line.PType)
 	if len(line.V0) > 0 {
-		lineText += prefixLine + line.V0
+		sb.WriteString(prefixLine)
+		sb.WriteString(line.V0)
 	}
 	if len(line.V1) > 0 {
-		lineText += prefixLine + line.V1
+		sb.WriteString(prefixLine)
+		sb.WriteString(line.V1)
 	}
 	if len(line.V2) > 0 {
-		lineText += prefixLine + line.V2
+		sb.WriteString(prefixLine)
+		sb.WriteString(line.V2)
 	}
 	if len(line.V3) > 0 {
-		lineText += prefixLine + line.V3
+		sb.WriteString(prefixLine)
+		sb.WriteString(line.V3)
 	}
 	if len(line.V4) > 0 {
-		lineText += prefixLine + line.V4
+		sb.WriteString(prefixLine)
+		sb.WriteString(line.V4)
 	}
 	if len(line.V5) > 0 {
-		lineText += prefixLine + line.V5
+		sb.WriteString(prefixLine)
+		sb.WriteString(line.V5)
 	}
 
-	persist.LoadPolicyLine(lineText, model)
+	persist.LoadPolicyLine(sb.String(), model)
 }
 
 // LoadPolicy loads policy from database.
