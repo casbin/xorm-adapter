@@ -63,7 +63,7 @@ func main() {
 package main
 
 import (
-	"github.com/casbin/casbin"
+	"github.com/casbin/casbin/v2"
 	_ "github.com/lib/pq"
 
 	"github.com/casbin/xorm-adapter"
