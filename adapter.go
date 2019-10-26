@@ -21,8 +21,8 @@ import (
 
 	"github.com/casbin/casbin/v2/model"
 	"github.com/casbin/casbin/v2/persist"
-	"github.com/go-xorm/xorm"
 	"github.com/lib/pq"
+	"xorm.io/xorm"
 )
 
 type CasbinRule struct {
