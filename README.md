@@ -1,9 +1,9 @@
 Xorm Adapter [![Build Status](https://travis-ci.org/casbin/xorm-adapter.svg?branch=master)](https://travis-ci.org/casbin/xorm-adapter) [![Coverage Status](https://coveralls.io/repos/github/casbin/xorm-adapter/badge.svg?branch=master)](https://coveralls.io/github/casbin/xorm-adapter?branch=master) [![Godoc](https://godoc.org/github.com/casbin/xorm-adapter?status.svg)](https://godoc.org/github.com/casbin/xorm-adapter)
 ====
 
-Xorm Adapter is the [Xorm](https://github.com/go-xorm/xorm) adapter for [Casbin](https://github.com/casbin/casbin). With this library, Casbin can load policy from Xorm supported database or save policy to it.
+Xorm Adapter is the [Xorm](https://gitea.com/xorm/xorm) adapter for [Casbin](https://github.com/casbin/casbin). With this library, Casbin can load policy from Xorm supported database or save policy to it.
 
-Based on [Xorm Drivers Support](https://github.com/go-xorm/xorm#drivers-support), The current supported databases are:
+Based on [Xorm Drivers Support](https://gitea.com/xorm/xorm#drivers-support), The current supported databases are:
 
 - Mysql: [github.com/go-sql-driver/mysql](https://github.com/go-sql-driver/mysql)
 - MyMysql: [github.com/ziutek/mymysql/godrv](https://github.com/ziutek/mymysql/godrv)
