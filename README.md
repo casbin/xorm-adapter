@@ -26,7 +26,7 @@ import (
 	"github.com/casbin/casbin/v2"
 	_ "github.com/go-sql-driver/mysql"
 
-	"github.com/casbin/xorm-adapter"
+	"github.com/casbin/xorm-adapter/v2"
 )
 
 func main() {
