@@ -18,6 +18,7 @@ import (
 	"errors"
 	"runtime"
 	"strings"
+	"sync"
 
 	"github.com/casbin/casbin/v2/model"
 	"github.com/casbin/casbin/v2/persist"
@@ -41,6 +42,7 @@ type Adapter struct {
 	dataSourceName string
 	dbSpecified    bool
 	engine         *xorm.Engine
+	sync.Mutex
 }
 
 // finalizer is the destructor for Adapter.
@@ -167,10 +169,16 @@ func (a *Adapter) close() error {
 }
 
 func (a *Adapter) createTable() error {
+	a.Lock()
+	defer a.Unlock()
+
 	return a.engine.Sync2(new(CasbinRule))
 }
 
 func (a *Adapter) dropTable() error {
+	a.Lock()
+	defer a.Unlock()
+
 	return a.engine.DropTables(new(CasbinRule))
 }
 
