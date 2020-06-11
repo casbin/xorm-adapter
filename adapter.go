@@ -169,16 +169,10 @@ func (a *Adapter) close() error {
 }
 
 func (a *Adapter) createTable() error {
-	a.Lock()
-	defer a.Unlock()
-
 	return a.engine.Sync2(new(CasbinRule))
 }
 
 func (a *Adapter) dropTable() error {
-	a.Lock()
-	defer a.Unlock()
-
 	return a.engine.DropTables(new(CasbinRule))
 }
 
@@ -217,6 +211,9 @@ func loadPolicyLine(line *CasbinRule, model model.Model) {
 
 // LoadPolicy loads policy from database.
 func (a *Adapter) LoadPolicy(model model.Model) error {
+	a.Lock()
+	defer a.Unlock()
+
 	var lines []*CasbinRule
 	if err := a.engine.Find(&lines); err != nil {
 		return err
@@ -257,6 +254,9 @@ func savePolicyLine(ptype string, rule []string) *CasbinRule {
 
 // SavePolicy saves policy to database.
 func (a *Adapter) SavePolicy(model model.Model) error {
+	a.Lock()
+	defer a.Unlock()
+
 	err := a.dropTable()
 	if err != nil {
 		return err
@@ -288,6 +288,9 @@ func (a *Adapter) SavePolicy(model model.Model) error {
 
 // AddPolicy adds a policy rule to the storage.
 func (a *Adapter) AddPolicy(sec string, ptype string, rule []string) error {
+	a.Lock()
+	defer a.Unlock()
+
 	line := savePolicyLine(ptype, rule)
 	_, err := a.engine.Insert(line)
 	return err
@@ -295,6 +298,9 @@ func (a *Adapter) AddPolicy(sec string, ptype string, rule []string) error {
 
 // RemovePolicy removes a policy rule from the storage.
 func (a *Adapter) RemovePolicy(sec string, ptype string, rule []string) error {
+	a.Lock()
+	defer a.Unlock()
+
 	line := savePolicyLine(ptype, rule)
 	_, err := a.engine.Delete(line)
 	return err
@@ -302,6 +308,9 @@ func (a *Adapter) RemovePolicy(sec string, ptype string, rule []string) error {
 
 // RemoveFilteredPolicy removes policy rules that match the filter from the storage.
 func (a *Adapter) RemoveFilteredPolicy(sec string, ptype string, fieldIndex int, fieldValues ...string) error {
+	a.Lock()
+	defer a.Unlock()
+
 	line := &CasbinRule{PType: ptype}
 
 	idx := fieldIndex + len(fieldValues)
