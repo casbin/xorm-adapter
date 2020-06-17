@@ -175,36 +175,24 @@ func (a *Adapter) dropTable() error {
 }
 
 func loadPolicyLine(line *CasbinRule, model model.Model) {
-	const prefixLine = ", "
-	var sb strings.Builder
-
-	sb.WriteString(line.PType)
-	if len(line.V0) > 0 {
-		sb.WriteString(prefixLine)
-		sb.WriteString(line.V0)
-	}
-	if len(line.V1) > 0 {
-		sb.WriteString(prefixLine)
-		sb.WriteString(line.V1)
-	}
-	if len(line.V2) > 0 {
-		sb.WriteString(prefixLine)
-		sb.WriteString(line.V2)
-	}
-	if len(line.V3) > 0 {
-		sb.WriteString(prefixLine)
-		sb.WriteString(line.V3)
-	}
-	if len(line.V4) > 0 {
-		sb.WriteString(prefixLine)
-		sb.WriteString(line.V4)
-	}
-	if len(line.V5) > 0 {
-		sb.WriteString(prefixLine)
-		sb.WriteString(line.V5)
+	var p = []string{line.PType,
+		line.V0, line.V1, line.V2, line.V3, line.V4, line.V5}
+	var lineText string
+	if line.V5 != "" {
+		lineText = strings.Join(p, ", ")
+	} else if line.V4 != "" {
+		lineText = strings.Join(p[:6], ", ")
+	} else if line.V3 != "" {
+		lineText = strings.Join(p[:5], ", ")
+	} else if line.V2 != "" {
+		lineText = strings.Join(p[:4], ", ")
+	} else if line.V1 != "" {
+		lineText = strings.Join(p[:3], ", ")
+	} else if line.V0 != "" {
+		lineText = strings.Join(p[:2], ", ")
 	}
 
-	persist.LoadPolicyLine(sb.String(), model)
+	persist.LoadPolicyLine(lineText, model)
 }
 
 // LoadPolicy loads policy from database.
