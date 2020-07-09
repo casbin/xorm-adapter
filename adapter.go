@@ -25,14 +25,22 @@ import (
 	"xorm.io/xorm"
 )
 
+func (the *CasbinRule) TableName() string {
+	if len(the.adapter.TableName) == 0 {
+		return "casbin_rule"
+	}
+	return the.adapter.TableName
+}
+
 type CasbinRule struct {
-	PType string `xorm:"varchar(100) index not null default ''"`
-	V0    string `xorm:"varchar(100) index not null default ''"`
-	V1    string `xorm:"varchar(100) index not null default ''"`
-	V2    string `xorm:"varchar(100) index not null default ''"`
-	V3    string `xorm:"varchar(100) index not null default ''"`
-	V4    string `xorm:"varchar(100) index not null default ''"`
-	V5    string `xorm:"varchar(100) index not null default ''"`
+	PType   string  `xorm:"varchar(100) index not null default ''"`
+	V0      string  `xorm:"varchar(100) index not null default ''"`
+	V1      string  `xorm:"varchar(100) index not null default ''"`
+	V2      string  `xorm:"varchar(100) index not null default ''"`
+	V3      string  `xorm:"varchar(100) index not null default ''"`
+	V4      string  `xorm:"varchar(100) index not null default ''"`
+	V5      string  `xorm:"varchar(100) index not null default ''"`
+	adapter Adapter `xorm:"-" json:"-"`
 }
 
 // Adapter represents the Xorm adapter for policy storage.
@@ -41,6 +49,7 @@ type Adapter struct {
 	dataSourceName string
 	dbSpecified    bool
 	engine         *xorm.Engine
+	TableName      string
 }
 
 // finalizer is the destructor for Adapter.
