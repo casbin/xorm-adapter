@@ -40,7 +40,18 @@ type Adapter struct {
 	driverName     string
 	dataSourceName string
 	dbSpecified    bool
+	isFiltered     bool
 	engine         *xorm.Engine
+}
+
+type Filter struct {
+	PType []string
+	V0    []string
+	V1    []string
+	V2    []string
+	V3    []string
+	V4    []string
+	V5    []string
 }
 
 // finalizer is the destructor for Adapter.
@@ -306,4 +317,53 @@ func (a *Adapter) RemoveFilteredPolicy(sec string, ptype string, fieldIndex int,
 
 	_, err := a.engine.Delete(line)
 	return err
+}
+
+// LoadFilteredPolicy loads only policy rules that match the filter.
+func (a *Adapter) LoadFilteredPolicy(model model.Model, filter interface{}) error {
+	var lines []*CasbinRule
+
+	filterValue, ok := filter.(Filter)
+	if !ok {
+		return errors.New("invalid filter type")
+	}
+	if err := a.filterQuery(a.engine.NewSession(), filterValue).Find(&lines); err != nil {
+		return err
+	}
+
+	for _, line := range lines {
+		loadPolicyLine(line, model)
+	}
+	a.isFiltered = true
+	return nil
+}
+
+// IsFiltered returns true if the loaded policy has been filtered.
+func (a *Adapter) IsFiltered() bool {
+	return a.isFiltered
+}
+
+func (a *Adapter) filterQuery(session *xorm.Session, filter Filter) *xorm.Session {
+	if len(filter.PType) > 0 {
+		session = session.In("p_type", filter.PType)
+	}
+	if len(filter.V0) > 0 {
+		session = session.In("v0", filter.V0)
+	}
+	if len(filter.V1) > 0 {
+		session = session.In("v1", filter.V1)
+	}
+	if len(filter.V2) > 0 {
+		session = session.In("v2", filter.V2)
+	}
+	if len(filter.V3) > 0 {
+		session = session.In("v3", filter.V3)
+	}
+	if len(filter.V4) > 0 {
+		session = session.In("v4", filter.V4)
+	}
+	if len(filter.V5) > 0 {
+		session = session.In("v5", filter.V5)
+	}
+	return session
 }
