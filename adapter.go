@@ -161,7 +161,7 @@ func (a *Adapter) createDatabase() error {
 		if _, err = engine.Exec("CREATE DATABASE casbin"); err != nil {
 			// 42P04 is	duplicate_database
 			if pqerr, ok := err.(*pq.Error); ok && pqerr.Code == "42P04" {
-				engine.Close()
+				_ = engine.Close()
 				return nil
 			}
 		}
@@ -169,7 +169,7 @@ func (a *Adapter) createDatabase() error {
 		_, err = engine.Exec("CREATE DATABASE IF NOT EXISTS casbin")
 	}
 	if err != nil {
-		engine.Close()
+		_ = engine.Close()
 		return err
 	}
 
