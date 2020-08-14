@@ -157,6 +157,60 @@ func testFilteredPolicy(t *testing.T, driverName string, dataSourceName string, 
 	testGetPolicy(t, e, [][]string{{"alice", "data1", "read"}, {"bob", "data2", "write"}})
 }
 
+func testRemovePolicies(t *testing.T, driverName string, dataSourceName string, dbSpecified ...bool) {
+	// Initialize some policy in DB.
+	initPolicy(t, driverName, dataSourceName, dbSpecified...)
+	// Note: you don't need to look at the above code
+	// if you already have a working DB with policy inside.
+
+	// Now the DB has policy, so we can provide a normal use case.
+	// Create an adapter and an enforcer.
+	// NewEnforcer() will load the policy automatically.
+	a, _ := NewAdapter(driverName, dataSourceName, dbSpecified...)
+	e, _ := casbin.NewEnforcer("examples/rbac_model.conf")
+
+	// Now set the adapter
+	e.SetAdapter(a)
+
+	a.AddPolicies("p", "p", [][]string{{"max", "data2", "read"}, {"max", "data1", "write"}, {"max", "data1", "delete"}})
+
+	// Load policies for max
+	e.LoadFilteredPolicy(Filter{V0: []string{"max"}})
+
+	testGetPolicy(t, e, [][]string{{"max", "data2", "read"}, {"max", "data1", "write"}, {"max", "data1", "delete"}})
+
+	// Remove policies
+	a.RemovePolicies("p", "p", [][]string{{"max", "data2", "read"}, {"max", "data1", "write"}})
+
+	// Reload policies for max
+	e.LoadFilteredPolicy(Filter{V0: []string{"max"}})
+
+	testGetPolicy(t, e, [][]string{{"max", "data1", "delete"}})
+}
+
+func testAddPolicies(t *testing.T, driverName string, dataSourceName string, dbSpecified ...bool) {
+	// Initialize some policy in DB.
+	initPolicy(t, driverName, dataSourceName, dbSpecified...)
+	// Note: you don't need to look at the above code
+	// if you already have a working DB with policy inside.
+
+	// Now the DB has policy, so we can provide a normal use case.
+	// Create an adapter and an enforcer.
+	// NewEnforcer() will load the policy automatically.
+	a, _ := NewAdapter(driverName, dataSourceName, dbSpecified...)
+	e, _ := casbin.NewEnforcer("examples/rbac_model.conf")
+
+	// Now set the adapter
+	e.SetAdapter(a)
+
+	a.AddPolicies("p", "p", [][]string{{"max", "data2", "read"}, {"max", "data1", "write"}})
+
+	// Load policies for max
+	e.LoadFilteredPolicy(Filter{V0: []string{"max"}})
+
+	testGetPolicy(t, e, [][]string{{"max", "data2", "read"}, {"max", "data1", "write"}})
+}
+
 func TestAdapters(t *testing.T) {
 	// You can also use the following way to use an existing DB "abc":
 	// testSaveLoad(t, "mysql", "root:@tcp(127.0.0.1:3306)/abc", true)
@@ -168,4 +222,10 @@ func TestAdapters(t *testing.T) {
 	testAutoSave(t, "postgres", "user=postgres host=127.0.0.1 port=5432 sslmode=disable")
 
 	testFilteredPolicy(t, "mysql", "root:@tcp(127.0.0.1:3306)/")
+
+	testAddPolicies(t, "mysql", "root:@tcp(127.0.0.1:3306)/")
+	testAddPolicies(t, "postgres", "user=postgres host=127.0.0.1 port=5432 sslmode=disable")
+
+	testRemovePolicies(t, "mysql", "root:@tcp(127.0.0.1:3306)/")
+	testRemovePolicies(t, "postgres", "user=postgres host=127.0.0.1 port=5432 sslmode=disable")
 }

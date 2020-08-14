@@ -335,10 +335,40 @@ func (a *Adapter) AddPolicy(sec string, ptype string, rule []string) error {
 	return err
 }
 
+// AddPolicies adds multiple policy rule to the storage.
+func (a *Adapter) AddPolicies(sec string, ptype string, rules [][]string) error {
+	_, err := a.engine.Transaction(func(tx *xorm.Session) (interface{}, error) {
+		for _, rule := range rules {
+			line := a.savePolicyLine(ptype, rule)
+			_, err := tx.Insert(line)
+			if err != nil {
+				return nil, err
+			}
+		}
+		return nil, nil
+	})
+	return err
+}
+
 // RemovePolicy removes a policy rule from the storage.
 func (a *Adapter) RemovePolicy(sec string, ptype string, rule []string) error {
 	line := a.savePolicyLine(ptype, rule)
 	_, err := a.engine.Delete(line)
+	return err
+}
+
+// ReovRemovePolicies removes multiple policy rule from the storage.
+func (a *Adapter) RemovePolicies(sec string, ptype string, rules [][]string) error {
+	_, err := a.engine.Transaction(func(tx *xorm.Session) (interface{}, error) {
+		for _, rule := range rules {
+			line := a.savePolicyLine(ptype, rule)
+			_, err := tx.Delete(line)
+			if err != nil {
+				return nil, nil
+			}
+		}
+		return nil, nil
+	})
 	return err
 }
 
