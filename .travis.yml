@@ -2,15 +2,15 @@ language: go
 
 sudo: false
 
+env:
+  - GO111MODULE=on
+
 go:
   - tip
-
-before_install:
-  - go get github.com/mattn/goveralls
-
-script:
-  - $HOME/gopath/bin/goveralls -service=travis-ci
 
 services:
   - mysql
   - postgresql
+
+script:
+  - make test
