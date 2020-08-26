@@ -16,10 +16,10 @@ package xormadapter
 
 import (
 	"log"
+	"strings"
 	"testing"
 
 	"github.com/casbin/casbin/v2"
-	"github.com/casbin/casbin/v2/util"
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/lib/pq"
 )
@@ -29,8 +29,18 @@ func testGetPolicy(t *testing.T, e *casbin.Enforcer, res [][]string) {
 	myRes := e.GetPolicy()
 	log.Print("Policy: ", myRes)
 
-	if !util.Array2DEquals(res, myRes) {
-		t.Error("Policy: ", myRes, ", supposed to be ", res)
+	m := make(map[string]bool, len(res))
+	for _, value := range res {
+		key := strings.Join(value, ",")
+		m[key] = true
+	}
+
+	for _, value := range myRes {
+		key := strings.Join(value, ",")
+		if !m[key] {
+			t.Error("Policy: ", myRes, ", supposed to be ", res)
+			break
+		}
 	}
 }
 
@@ -94,11 +104,20 @@ func testAutoSave(t *testing.T, driverName string, dataSourceName string, dbSpec
 	// Now we disable it.
 	e.EnableAutoSave(false)
 
+	var err error
+	logErr := func(action string) {
+		if err != nil {
+			t.Fatalf("test action[%s] failed, err: %v", action, err)
+		}
+	}
+
 	// Because AutoSave is disabled, the policy change only affects the policy in Casbin enforcer,
 	// it doesn't affect the policy in the storage.
-	e.AddPolicy("alice", "data1", "write")
+	_, err = e.AddPolicy("alice", "data1", "write")
+	logErr("AddPolicy")
 	// Reload the policy from the storage to see the effect.
-	e.LoadPolicy()
+	err = e.LoadPolicy()
+	logErr("LoadPolicy")
 	// This is still the original policy.
 	testGetPolicy(t, e, [][]string{{"alice", "data1", "read"}, {"bob", "data2", "write"}, {"data2_admin", "data2", "read"}, {"data2_admin", "data2", "write"}})
 
@@ -107,23 +126,29 @@ func testAutoSave(t *testing.T, driverName string, dataSourceName string, dbSpec
 
 	// Because AutoSave is enabled, the policy change not only affects the policy in Casbin enforcer,
 	// but also affects the policy in the storage.
-	e.AddPolicy("alice", "data1", "write")
+	_, err = e.AddPolicy("alice", "data1", "write")
+	logErr("AddPolicy2")
 	// Reload the policy from the storage to see the effect.
-	e.LoadPolicy()
+	err = e.LoadPolicy()
+	logErr("LoadPolicy2")
 	// The policy has a new rule: {"alice", "data1", "write"}.
 	testGetPolicy(t, e, [][]string{{"alice", "data1", "read"}, {"bob", "data2", "write"}, {"data2_admin", "data2", "read"}, {"data2_admin", "data2", "write"}, {"alice", "data1", "write"}})
 
 	// Remove the added rule.
-	e.RemovePolicy("alice", "data1", "write")
-	e.LoadPolicy()
+	_, err = e.RemovePolicy("alice", "data1", "write")
+	logErr("RemovePolicy")
+	err = e.LoadPolicy()
+	logErr("LoadPolicy3")
 	testGetPolicy(t, e, [][]string{{"alice", "data1", "read"}, {"bob", "data2", "write"}, {"data2_admin", "data2", "read"}, {"data2_admin", "data2", "write"}})
 
 	// Remove "data2_admin" related policy rules via a filter.
 	// Two rules: {"data2_admin", "data2", "read"}, {"data2_admin", "data2", "write"} are deleted.
-	e.RemoveFilteredPolicy(0, "data2_admin")
-	e.LoadPolicy()
-	testGetPolicy(t, e, [][]string{{"alice", "data1", "read"}, {"bob", "data2", "write"}})
+	_, err = e.RemoveFilteredPolicy(0, "data2_admin")
+	logErr("RemoveFilteredPolicy")
+	err = e.LoadPolicy()
+	logErr("LoadPolicy4")
 
+	testGetPolicy(t, e, [][]string{{"alice", "data1", "read"}, {"bob", "data2", "write"}})
 }
 
 func testFilteredPolicy(t *testing.T, driverName string, dataSourceName string, dbSpecified ...bool) {
@@ -140,20 +165,31 @@ func testFilteredPolicy(t *testing.T, driverName string, dataSourceName string, 
 	// Now set the adapter
 	e.SetAdapter(a)
 
+	var err error
+	logErr := func(action string) {
+		if err != nil {
+			t.Fatalf("test action[%s] failed, err: %v", action, err)
+		}
+	}
+
 	// Load only alice's policies
-	e.LoadFilteredPolicy(Filter{V0: []string{"alice"}})
+	err = e.LoadFilteredPolicy(Filter{V0: []string{"alice"}})
+	logErr("LoadFilteredPolicy")
 	testGetPolicy(t, e, [][]string{{"alice", "data1", "read"}})
 
 	// Load only bob's policies
-	e.LoadFilteredPolicy(Filter{V0: []string{"bob"}})
+	err = e.LoadFilteredPolicy(Filter{V0: []string{"bob"}})
+	logErr("LoadFilteredPolicy2")
 	testGetPolicy(t, e, [][]string{{"bob", "data2", "write"}})
 
 	// Load policies for data2_admin
-	e.LoadFilteredPolicy(Filter{V0: []string{"data2_admin"}})
+	err = e.LoadFilteredPolicy(Filter{V0: []string{"data2_admin"}})
+	logErr("LoadFilteredPolicy3")
 	testGetPolicy(t, e, [][]string{{"data2_admin", "data2", "read"}, {"data2_admin", "data2", "write"}})
 
 	// Load policies for alice and bob
-	e.LoadFilteredPolicy(Filter{V0: []string{"alice", "bob"}})
+	err = e.LoadFilteredPolicy(Filter{V0: []string{"alice", "bob"}})
+	logErr("LoadFilteredPolicy4")
 	testGetPolicy(t, e, [][]string{{"alice", "data1", "read"}, {"bob", "data2", "write"}})
 }
 
@@ -172,18 +208,29 @@ func testRemovePolicies(t *testing.T, driverName string, dataSourceName string, 
 	// Now set the adapter
 	e.SetAdapter(a)
 
-	a.AddPolicies("p", "p", [][]string{{"max", "data2", "read"}, {"max", "data1", "write"}, {"max", "data1", "delete"}})
+	var err error
+	logErr := func(action string) {
+		if err != nil {
+			t.Fatalf("test action[%s] failed, err: %v", action, err)
+		}
+	}
+
+	err = a.AddPolicies("p", "p", [][]string{{"max", "data2", "read"}, {"max", "data1", "write"}, {"max", "data1", "delete"}})
+	logErr("AddPolicies")
 
 	// Load policies for max
-	e.LoadFilteredPolicy(Filter{V0: []string{"max"}})
+	err = e.LoadFilteredPolicy(Filter{V0: []string{"max"}})
+	logErr("LoadFilteredPolicy")
 
 	testGetPolicy(t, e, [][]string{{"max", "data2", "read"}, {"max", "data1", "write"}, {"max", "data1", "delete"}})
 
 	// Remove policies
-	a.RemovePolicies("p", "p", [][]string{{"max", "data2", "read"}, {"max", "data1", "write"}})
+	err = a.RemovePolicies("p", "p", [][]string{{"max", "data2", "read"}, {"max", "data1", "write"}})
+	logErr("RemovePolicies")
 
 	// Reload policies for max
-	e.LoadFilteredPolicy(Filter{V0: []string{"max"}})
+	err = e.LoadFilteredPolicy(Filter{V0: []string{"max"}})
+	logErr("LoadFilteredPolicy2")
 
 	testGetPolicy(t, e, [][]string{{"max", "data1", "delete"}})
 }
@@ -203,10 +250,19 @@ func testAddPolicies(t *testing.T, driverName string, dataSourceName string, dbS
 	// Now set the adapter
 	e.SetAdapter(a)
 
-	a.AddPolicies("p", "p", [][]string{{"max", "data2", "read"}, {"max", "data1", "write"}})
+	var err error
+	logErr := func(action string) {
+		if err != nil {
+			t.Fatalf("test action[%s] failed, err: %v", action, err)
+		}
+	}
+
+	err = a.AddPolicies("p", "p", [][]string{{"max", "data2", "read"}, {"max", "data1", "write"}})
+	logErr("AddPolicies")
 
 	// Load policies for max
-	e.LoadFilteredPolicy(Filter{V0: []string{"max"}})
+	err = e.LoadFilteredPolicy(Filter{V0: []string{"max"}})
+	logErr("LoadFilteredPolicy")
 
 	testGetPolicy(t, e, [][]string{{"max", "data2", "read"}, {"max", "data1", "write"}})
 }
