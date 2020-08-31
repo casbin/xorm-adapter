@@ -16,6 +16,7 @@ package xormadapter
 
 import (
 	"errors"
+	"log"
 	"runtime"
 	"strings"
 
@@ -25,6 +26,7 @@ import (
 	"xorm.io/xorm"
 )
 
+// TableName  if tableName=="" , adapter will use default tablename "casbin_rule".
 func (the *CasbinRule) TableName() string {
 	if len(the.tableName) == 0 {
 		return "casbin_rule"
@@ -32,15 +34,17 @@ func (the *CasbinRule) TableName() string {
 	return the.tableName
 }
 
+// CasbinRule  .
 type CasbinRule struct {
-	PType     string `xorm:"varchar(100) index not null default ''"`
-	V0        string `xorm:"varchar(100) index not null default ''"`
-	V1        string `xorm:"varchar(100) index not null default ''"`
-	V2        string `xorm:"varchar(100) index not null default ''"`
-	V3        string `xorm:"varchar(100) index not null default ''"`
-	V4        string `xorm:"varchar(100) index not null default ''"`
-	V5        string `xorm:"varchar(100) index not null default ''"`
-	tableName string `xorm:"-" json:"-"`
+	PType string `xorm:"varchar(100) index not null default ''"`
+	V0    string `xorm:"varchar(100) index not null default ''"`
+	V1    string `xorm:"varchar(100) index not null default ''"`
+	V2    string `xorm:"varchar(100) index not null default ''"`
+	V3    string `xorm:"varchar(100) index not null default ''"`
+	V4    string `xorm:"varchar(100) index not null default ''"`
+	V5    string `xorm:"varchar(100) index not null default ''"`
+
+	tableName string `xorm:"-"`
 }
 
 // Adapter represents the Xorm adapter for policy storage.
@@ -53,6 +57,7 @@ type Adapter struct {
 	tableName      string
 }
 
+// Filter  .
 type Filter struct {
 	PType []string
 	V0    []string
@@ -65,9 +70,13 @@ type Filter struct {
 
 // finalizer is the destructor for Adapter.
 func finalizer(a *Adapter) {
+	if a.engine == nil {
+		return
+	}
+
 	err := a.engine.Close()
 	if err != nil {
-		panic(err)
+		log.Printf("close xorm adapter engine failed, err: %v", err)
 	}
 }
 
@@ -102,6 +111,7 @@ func NewAdapter(driverName string, dataSourceName string, dbSpecified ...bool) (
 	return a, nil
 }
 
+// NewAdapterWithTableName  .
 func NewAdapterWithTableName(driverName string, dataSourceName string, tableName string, dbSpecified ...bool) (*Adapter, error) {
 	a := &Adapter{
 		driverName:     driverName,
@@ -129,6 +139,7 @@ func NewAdapterWithTableName(driverName string, dataSourceName string, tableName
 	return a, nil
 }
 
+// NewAdapterByEngine  .
 func NewAdapterByEngine(engine *xorm.Engine) (*Adapter, error) {
 	a := &Adapter{
 		engine: engine,
@@ -142,6 +153,7 @@ func NewAdapterByEngine(engine *xorm.Engine) (*Adapter, error) {
 	return a, nil
 }
 
+// NewAdapterByEngineWithTableName  .
 func NewAdapterByEngineWithTableName(engine *xorm.Engine, tableName string) (*Adapter, error) {
 	a := &Adapter{
 		engine:    engine,
@@ -218,16 +230,6 @@ func (a *Adapter) open() error {
 	return a.createTable()
 }
 
-func (a *Adapter) close() error {
-	err := a.engine.Close()
-	if err != nil {
-		return err
-	}
-
-	a.engine = nil
-	return nil
-}
-
 func (a *Adapter) createTable() error {
 	return a.engine.Sync2(&CasbinRule{tableName: a.tableName})
 }
@@ -259,7 +261,8 @@ func loadPolicyLine(line *CasbinRule, model model.Model) {
 
 // LoadPolicy loads policy from database.
 func (a *Adapter) LoadPolicy(model model.Model) error {
-	var lines []*CasbinRule
+	lines := make([]*CasbinRule, 0, 64)
+
 	if err := a.engine.Find(&lines); err != nil {
 		return err
 	}
@@ -271,8 +274,8 @@ func (a *Adapter) LoadPolicy(model model.Model) error {
 	return nil
 }
 
-func (a *Adapter) savePolicyLine(ptype string, rule []string) *CasbinRule {
-	line := &CasbinRule{PType: ptype, tableName: a.tableName}
+func (a *Adapter) genPolicyLine(ptype string, rule []string) *CasbinRule {
+	line := CasbinRule{PType: ptype, tableName: a.tableName}
 
 	l := len(rule)
 	if l > 0 {
@@ -294,7 +297,7 @@ func (a *Adapter) savePolicyLine(ptype string, rule []string) *CasbinRule {
 		line.V5 = rule[5]
 	}
 
-	return line
+	return &line
 }
 
 // SavePolicy saves policy to database.
@@ -308,30 +311,31 @@ func (a *Adapter) SavePolicy(model model.Model) error {
 		return err
 	}
 
-	var lines []*CasbinRule
+	lines := make([]*CasbinRule, 0, 64)
 
 	for ptype, ast := range model["p"] {
 		for _, rule := range ast.Policy {
-			line := a.savePolicyLine(ptype, rule)
+			line := a.genPolicyLine(ptype, rule)
 			lines = append(lines, line)
 		}
 	}
 
 	for ptype, ast := range model["g"] {
 		for _, rule := range ast.Policy {
-			line := a.savePolicyLine(ptype, rule)
+			line := a.genPolicyLine(ptype, rule)
 			lines = append(lines, line)
 		}
 	}
 
 	_, err = a.engine.Insert(&lines)
+
 	return err
 }
 
 // AddPolicy adds a policy rule to the storage.
 func (a *Adapter) AddPolicy(sec string, ptype string, rule []string) error {
-	line := a.savePolicyLine(ptype, rule)
-	_, err := a.engine.Insert(line)
+	line := a.genPolicyLine(ptype, rule)
+	_, err := a.engine.InsertOne(line)
 	return err
 }
 
@@ -339,8 +343,8 @@ func (a *Adapter) AddPolicy(sec string, ptype string, rule []string) error {
 func (a *Adapter) AddPolicies(sec string, ptype string, rules [][]string) error {
 	_, err := a.engine.Transaction(func(tx *xorm.Session) (interface{}, error) {
 		for _, rule := range rules {
-			line := a.savePolicyLine(ptype, rule)
-			_, err := tx.Insert(line)
+			line := a.genPolicyLine(ptype, rule)
+			_, err := tx.InsertOne(line)
 			if err != nil {
 				return nil, err
 			}
@@ -352,16 +356,16 @@ func (a *Adapter) AddPolicies(sec string, ptype string, rules [][]string) error 
 
 // RemovePolicy removes a policy rule from the storage.
 func (a *Adapter) RemovePolicy(sec string, ptype string, rule []string) error {
-	line := a.savePolicyLine(ptype, rule)
+	line := a.genPolicyLine(ptype, rule)
 	_, err := a.engine.Delete(line)
 	return err
 }
 
-// ReovRemovePolicies removes multiple policy rule from the storage.
+// RemovePolicies removes multiple policy rule from the storage.
 func (a *Adapter) RemovePolicies(sec string, ptype string, rules [][]string) error {
 	_, err := a.engine.Transaction(func(tx *xorm.Session) (interface{}, error) {
 		for _, rule := range rules {
-			line := a.savePolicyLine(ptype, rule)
+			line := a.genPolicyLine(ptype, rule)
 			_, err := tx.Delete(line)
 			if err != nil {
 				return nil, nil
@@ -374,7 +378,7 @@ func (a *Adapter) RemovePolicies(sec string, ptype string, rules [][]string) err
 
 // RemoveFilteredPolicy removes policy rules that match the filter from the storage.
 func (a *Adapter) RemoveFilteredPolicy(sec string, ptype string, fieldIndex int, fieldValues ...string) error {
-	line := &CasbinRule{PType: ptype, tableName: a.tableName}
+	line := CasbinRule{PType: ptype, tableName: a.tableName}
 
 	idx := fieldIndex + len(fieldValues)
 	if fieldIndex <= 0 && idx > 0 {
@@ -396,18 +400,18 @@ func (a *Adapter) RemoveFilteredPolicy(sec string, ptype string, fieldIndex int,
 		line.V5 = fieldValues[5-fieldIndex]
 	}
 
-	_, err := a.engine.Delete(line)
+	_, err := a.engine.Delete(&line)
 	return err
 }
 
 // LoadFilteredPolicy loads only policy rules that match the filter.
 func (a *Adapter) LoadFilteredPolicy(model model.Model, filter interface{}) error {
-	var lines []*CasbinRule
-
 	filterValue, ok := filter.(Filter)
 	if !ok {
 		return errors.New("invalid filter type")
 	}
+
+	lines := make([]*CasbinRule, 0, 64)
 	if err := a.filterQuery(a.engine.NewSession(), filterValue).Find(&lines); err != nil {
 		return err
 	}
@@ -425,26 +429,29 @@ func (a *Adapter) IsFiltered() bool {
 }
 
 func (a *Adapter) filterQuery(session *xorm.Session, filter Filter) *xorm.Session {
-	if len(filter.PType) > 0 {
-		session = session.In("p_type", filter.PType)
+	filterValue := [7]struct {
+		col string
+		val []string
+	}{
+		{"p_type", filter.PType},
+		{"v0", filter.V0},
+		{"v1", filter.V1},
+		{"v2", filter.V2},
+		{"v3", filter.V3},
+		{"v4", filter.V4},
+		{"v5", filter.V5},
 	}
-	if len(filter.V0) > 0 {
-		session = session.In("v0", filter.V0)
+
+	for idx := range filterValue {
+		switch len(filterValue[idx].val) {
+		case 0:
+			continue
+		case 1:
+			session.And(filterValue[idx].col+" = ?", filterValue[idx].val[0])
+		default:
+			session.In(filterValue[idx].col, filterValue[idx].val)
+		}
 	}
-	if len(filter.V1) > 0 {
-		session = session.In("v1", filter.V1)
-	}
-	if len(filter.V2) > 0 {
-		session = session.In("v2", filter.V2)
-	}
-	if len(filter.V3) > 0 {
-		session = session.In("v3", filter.V3)
-	}
-	if len(filter.V4) > 0 {
-		session = session.In("v4", filter.V4)
-	}
-	if len(filter.V5) > 0 {
-		session = session.In("v5", filter.V5)
-	}
+
 	return session
 }
