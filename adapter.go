@@ -263,7 +263,7 @@ func loadPolicyLine(line *CasbinRule, model model.Model) {
 func (a *Adapter) LoadPolicy(model model.Model) error {
 	lines := make([]*CasbinRule, 0, 64)
 
-	if err := a.engine.Find(&lines); err != nil {
+	if err := a.engine.Table(&CasbinRule{tableName: a.tableName}).Find(&lines); err != nil {
 		return err
 	}
 
@@ -412,7 +412,7 @@ func (a *Adapter) LoadFilteredPolicy(model model.Model, filter interface{}) erro
 	}
 
 	lines := make([]*CasbinRule, 0, 64)
-	if err := a.filterQuery(a.engine.NewSession(), filterValue).Find(&lines); err != nil {
+	if err := a.filterQuery(a.engine.NewSession(), filterValue).Table(&CasbinRule{tableName: a.tableName}).Find(&lines); err != nil {
 		return err
 	}
 
