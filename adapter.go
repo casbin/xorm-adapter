@@ -455,3 +455,10 @@ func (a *Adapter) filterQuery(session *xorm.Session, filter Filter) *xorm.Sessio
 
 	return session
 }
+
+// UpdatePolicy update oldRule to newPolicy permanently
+func (a *Adapter) UpdatePolicy(sec string, ptype string, oldRule, newPolicy []string) error {
+	oRule := a.genPolicyLine(ptype, oldRule)
+	_, err := a.engine.Update(a.genPolicyLine(ptype, newPolicy), oRule)
+	return err
+}
