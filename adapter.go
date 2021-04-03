@@ -462,3 +462,22 @@ func (a *Adapter) UpdatePolicy(sec string, ptype string, oldRule, newPolicy []st
 	_, err := a.engine.Update(a.genPolicyLine(ptype, newPolicy), oRule)
 	return err
 }
+
+// UpdatePolicies updates some policy rules to storage, like db, redis.
+func (a *Adapter) UpdatePolicies(sec string, ptype string, oldRules, newRules [][]string) error {
+	session := a.engine.NewSession()
+	defer session.Close()
+
+	if err := session.Begin(); err != nil {
+		return err
+	}
+
+	for i, oldRule := range oldRules {
+		nRule, oRule := a.genPolicyLine(ptype, newRules[i]), a.genPolicyLine(ptype, oldRule)
+		if _, err := session.Update(nRule, oRule); err != nil {
+			return err
+		}
+	}
+
+	return session.Commit()
+}
