@@ -327,6 +327,11 @@ func (a *Adapter) SavePolicy(model model.Model) error {
 		}
 	}
 
+	// check whether the policy is empty
+	if len(lines) == 0 {
+		return nil
+	}
+
 	_, err = a.engine.Insert(&lines)
 
 	return err
