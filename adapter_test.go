@@ -305,19 +305,19 @@ func TestAdapters(t *testing.T) {
 	// testSaveLoad(t, "mysql", "root:@tcp(127.0.0.1:3306)/abc", true)
 
 	testSaveLoad(t, "mysql", "root:@tcp(127.0.0.1:3306)/")
-	testSaveLoad(t, "postgres", "user=postgres host=127.0.0.1 port=5432 sslmode=disable")
+	testSaveLoad(t, "postgres", "user=postgres password=postgres host=127.0.0.1 port=5432 sslmode=disable")
 
 	testAutoSave(t, "mysql", "root:@tcp(127.0.0.1:3306)/")
-	testAutoSave(t, "postgres", "user=postgres host=127.0.0.1 port=5432 sslmode=disable")
+	testAutoSave(t, "postgres", "user=postgres password=postgres host=127.0.0.1 port=5432 sslmode=disable")
 
 	testFilteredPolicy(t, "mysql", "root:@tcp(127.0.0.1:3306)/")
 
 	testAddPolicies(t, "mysql", "root:@tcp(127.0.0.1:3306)/")
-	testAddPolicies(t, "postgres", "user=postgres host=127.0.0.1 port=5432 sslmode=disable")
+	testAddPolicies(t, "postgres", "user=postgres password=postgres host=127.0.0.1 port=5432 sslmode=disable")
 
 	testRemovePolicies(t, "mysql", "root:@tcp(127.0.0.1:3306)/")
-	testRemovePolicies(t, "postgres", "user=postgres host=127.0.0.1 port=5432 sslmode=disable")
+	testRemovePolicies(t, "postgres", "user=postgres password=postgres host=127.0.0.1 port=5432 sslmode=disable")
 
 	testUpdatePolicies(t, "mysql", "root:@tcp(127.0.0.1:3306)/")
-	testUpdatePolicies(t, "postgres", "user=postgres host=127.0.0.1 port=5432 sslmode=disable")
+	testUpdatePolicies(t, "postgres", "user=postgres password=postgres host=127.0.0.1 port=5432 sslmode=disable")
 }
