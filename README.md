@@ -1,5 +1,5 @@
 Xorm Adapter
-[![Build Status](https://travis-ci.org/casbin/xorm-adapter.svg?branch=master)](https://travis-ci.org/casbin/xorm-adapter)
+[![Go](https://github.com/casbin/xorm-adapter/actions/workflows/ci.yml/badge.svg)](https://github.com/casbin/xorm-adapter/actions/workflows/ci.yml)
 [![Coverage Status](https://coveralls.io/repos/github/casbin/xorm-adapter/badge.svg?branch=master)](https://coveralls.io/github/casbin/xorm-adapter?branch=master)
 [![Go Report Card](https://goreportcard.com/badge/github.com/casbin/xorm-adapter)](https://goreportcard.com/report/github.com/casbin/xorm-adapter)
 [![Godoc](https://godoc.org/github.com/casbin/xorm-adapter?status.svg)](https://godoc.org/github.com/casbin/xorm-adapter)
