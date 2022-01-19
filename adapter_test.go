@@ -15,12 +15,12 @@
 package xormadapter
 
 import (
-	"github.com/casbin/casbin/v2/util"
 	"log"
 	"strings"
 	"testing"
 
 	"github.com/casbin/casbin/v2"
+	"github.com/casbin/casbin/v2/util"
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/lib/pq"
 )
@@ -45,20 +45,15 @@ func testGetPolicy(t *testing.T, e *casbin.Enforcer, res [][]string) {
 	}
 }
 
-func initPolicy(t *testing.T, driverName string, dataSourceName string, dbSpecified ...bool) {
+func initPolicy(t *testing.T, a *Adapter) {
 	// Because the DB is empty at first,
 	// so we need to load the policy from the file adapter (.CSV) first.
 	e, _ := casbin.NewEnforcer("examples/rbac_model.conf", "examples/rbac_policy.csv")
 
-	a, err := NewAdapter(driverName, dataSourceName, dbSpecified...)
-	if err != nil {
-		panic(err)
-	}
-
 	// This is a trick to save the current policy to the DB.
 	// We can't call e.SavePolicy() because the adapter in the enforcer is still the file adapter.
 	// The current policy means the policy in the Casbin enforcer (aka in memory).
-	err = a.SavePolicy(e.GetModel())
+	err := a.SavePolicy(e.GetModel())
 	if err != nil {
 		panic(err)
 	}
@@ -75,30 +70,28 @@ func initPolicy(t *testing.T, driverName string, dataSourceName string, dbSpecif
 	testGetPolicy(t, e, [][]string{{"alice", "data1", "read"}, {"bob", "data2", "write"}, {"data2_admin", "data2", "read"}, {"data2_admin", "data2", "write"}})
 }
 
-func testSaveLoad(t *testing.T, driverName string, dataSourceName string, dbSpecified ...bool) {
+func testSaveLoad(t *testing.T, a *Adapter) {
 	// Initialize some policy in DB.
-	initPolicy(t, driverName, dataSourceName, dbSpecified...)
+	initPolicy(t, a)
 	// Note: you don't need to look at the above code
 	// if you already have a working DB with policy inside.
 
 	// Now the DB has policy, so we can provide a normal use case.
 	// Create an adapter and an enforcer.
 	// NewEnforcer() will load the policy automatically.
-	a, _ := NewAdapter(driverName, dataSourceName, dbSpecified...)
 	e, _ := casbin.NewEnforcer("examples/rbac_model.conf", a)
 	testGetPolicy(t, e, [][]string{{"alice", "data1", "read"}, {"bob", "data2", "write"}, {"data2_admin", "data2", "read"}, {"data2_admin", "data2", "write"}})
 }
 
-func testAutoSave(t *testing.T, driverName string, dataSourceName string, dbSpecified ...bool) {
+func testAutoSave(t *testing.T, a *Adapter) {
 	// Initialize some policy in DB.
-	initPolicy(t, driverName, dataSourceName, dbSpecified...)
+	initPolicy(t, a)
 	// Note: you don't need to look at the above code
 	// if you already have a working DB with policy inside.
 
 	// Now the DB has policy, so we can provide a normal use case.
 	// Create an adapter and an enforcer.
 	// NewEnforcer() will load the policy automatically.
-	a, _ := NewAdapter(driverName, dataSourceName, dbSpecified...)
 	e, _ := casbin.NewEnforcer("examples/rbac_model.conf", a)
 
 	// AutoSave is enabled by default.
@@ -152,16 +145,15 @@ func testAutoSave(t *testing.T, driverName string, dataSourceName string, dbSpec
 	testGetPolicy(t, e, [][]string{{"alice", "data1", "read"}, {"bob", "data2", "write"}})
 }
 
-func testFilteredPolicy(t *testing.T, driverName string, dataSourceName string, dbSpecified ...bool) {
+func testFilteredPolicy(t *testing.T, a *Adapter) {
 	// Initialize some policy in DB.
-	initPolicy(t, driverName, dataSourceName, dbSpecified...)
+	initPolicy(t, a)
 	// Note: you don't need to look at the above code
 	// if you already have a working DB with policy inside.
 
 	// Now the DB has policy, so we can provide a normal use case.
 	// Create an adapter and an enforcer.
 	// NewEnforcer() will load the policy automatically.
-	a, _ := NewAdapter(driverName, dataSourceName, dbSpecified...)
 	e, _ := casbin.NewEnforcer("examples/rbac_model.conf")
 	// Now set the adapter
 	e.SetAdapter(a)
@@ -194,16 +186,15 @@ func testFilteredPolicy(t *testing.T, driverName string, dataSourceName string, 
 	testGetPolicy(t, e, [][]string{{"alice", "data1", "read"}, {"bob", "data2", "write"}})
 }
 
-func testRemovePolicies(t *testing.T, driverName string, dataSourceName string, dbSpecified ...bool) {
+func testRemovePolicies(t *testing.T, a *Adapter) {
 	// Initialize some policy in DB.
-	initPolicy(t, driverName, dataSourceName, dbSpecified...)
+	initPolicy(t, a)
 	// Note: you don't need to look at the above code
 	// if you already have a working DB with policy inside.
 
 	// Now the DB has policy, so we can provide a normal use case.
 	// Create an adapter and an enforcer.
 	// NewEnforcer() will load the policy automatically.
-	a, _ := NewAdapter(driverName, dataSourceName, dbSpecified...)
 	e, _ := casbin.NewEnforcer("examples/rbac_model.conf")
 
 	// Now set the adapter
@@ -236,16 +227,15 @@ func testRemovePolicies(t *testing.T, driverName string, dataSourceName string, 
 	testGetPolicy(t, e, [][]string{{"max", "data1", "delete"}})
 }
 
-func testAddPolicies(t *testing.T, driverName string, dataSourceName string, dbSpecified ...bool) {
+func testAddPolicies(t *testing.T, a *Adapter) {
 	// Initialize some policy in DB.
-	initPolicy(t, driverName, dataSourceName, dbSpecified...)
+	initPolicy(t, a)
 	// Note: you don't need to look at the above code
 	// if you already have a working DB with policy inside.
 
 	// Now the DB has policy, so we can provide a normal use case.
 	// Create an adapter and an enforcer.
 	// NewEnforcer() will load the policy automatically.
-	a, _ := NewAdapter(driverName, dataSourceName, dbSpecified...)
 	e, _ := casbin.NewEnforcer("examples/rbac_model.conf")
 
 	// Now set the adapter
@@ -268,16 +258,15 @@ func testAddPolicies(t *testing.T, driverName string, dataSourceName string, dbS
 	testGetPolicy(t, e, [][]string{{"max", "data2", "read"}, {"max", "data1", "write"}})
 }
 
-func testUpdatePolicies(t *testing.T, driverName string, dataSourceName string, dbSpecified ...bool) {
+func testUpdatePolicies(t *testing.T, a *Adapter) {
 	// Initialize some policy in DB.
-	initPolicy(t, driverName, dataSourceName, dbSpecified...)
+	initPolicy(t, a)
 	// Note: you don't need to look at the above code
 	// if you already have a working DB with policy inside.
 
 	// Now the DB has policy, so we can provide a normal use case.
 	// Create an adapter and an enforcer.
 	// NewEnforcer() will load the policy automatically.
-	a, _ := NewAdapter(driverName, dataSourceName, dbSpecified...)
 	e, _ := casbin.NewEnforcer("examples/rbac_model.conf")
 
 	// Now set the adapter
@@ -301,16 +290,15 @@ func testUpdatePolicies(t *testing.T, driverName string, dataSourceName string, 
 	testGetPolicy(t, e, [][]string{{"bob", "data1", "read"}, {"bob", "data2", "write"}, {"data2_admin", "data2", "read"}, {"data2_admin", "data2", "write"}})
 }
 
-func testUpdateFilteredPolicies(t *testing.T, driverName string, dataSourceName string, dbSpecified ...bool) {
+func testUpdateFilteredPolicies(t *testing.T, a *Adapter) {
 	// Initialize some policy in DB.
-	initPolicy(t, driverName, dataSourceName, dbSpecified...)
+	initPolicy(t, a)
 	// Note: you don't need to look at the above code
 	// if you already have a working DB with policy inside.
 
 	// Now the DB has policy, so we can provide a normal use case.
 	// Create an adapter and an enforcer.
 	// NewEnforcer() will load the policy automatically.
-	a, _ := NewAdapter(driverName, dataSourceName, dbSpecified...)
 	e, _ := casbin.NewEnforcer("examples/rbac_model.conf")
 
 	// Now set the adapter
@@ -370,23 +358,30 @@ func TestAdapters(t *testing.T) {
 	// You can also use the following way to use an existing DB "abc":
 	// testSaveLoad(t, "mysql", "root:@tcp(127.0.0.1:3306)/abc", true)
 
-	testSaveLoad(t, "mysql", "root:@tcp(127.0.0.1:3306)/")
-	testSaveLoad(t, "postgres", "user=postgres password=postgres host=127.0.0.1 port=5432 sslmode=disable")
+	a, _ := NewAdapter("mysql", "root:@tcp(127.0.0.1:3306)/")
+	testSaveLoad(t, a)
+	testAutoSave(t, a)
+	testFilteredPolicy(t, a)
+	testAddPolicies(t, a)
+	testRemovePolicies(t, a)
+	testUpdatePolicies(t, a)
+	testUpdateFilteredPolicies(t, a)
 
-	testAutoSave(t, "mysql", "root:@tcp(127.0.0.1:3306)/")
-	testAutoSave(t, "postgres", "user=postgres password=postgres host=127.0.0.1 port=5432 sslmode=disable")
+	a, _ = NewAdapter("postgres", "user=postgres password=postgres host=127.0.0.1 port=5432 sslmode=disable")
+	testSaveLoad(t, a)
+	testAutoSave(t, a)
+	testFilteredPolicy(t, a)
+	testAddPolicies(t, a)
+	testRemovePolicies(t, a)
+	testUpdatePolicies(t, a)
+	testUpdateFilteredPolicies(t, a)
 
-	testFilteredPolicy(t, "mysql", "root:@tcp(127.0.0.1:3306)/")
-
-	testAddPolicies(t, "mysql", "root:@tcp(127.0.0.1:3306)/")
-	testAddPolicies(t, "postgres", "user=postgres password=postgres host=127.0.0.1 port=5432 sslmode=disable")
-
-	testRemovePolicies(t, "mysql", "root:@tcp(127.0.0.1:3306)/")
-	testRemovePolicies(t, "postgres", "user=postgres password=postgres host=127.0.0.1 port=5432 sslmode=disable")
-
-	testUpdatePolicies(t, "mysql", "root:@tcp(127.0.0.1:3306)/")
-	testUpdatePolicies(t, "postgres", "user=postgres password=postgres host=127.0.0.1 port=5432 sslmode=disable")
-
-	testUpdateFilteredPolicies(t, "mysql", "root:@tcp(127.0.0.1:3306)/")
-	testUpdateFilteredPolicies(t, "postgres", "user=postgres password=postgres host=127.0.0.1 port=5432 sslmode=disable")
+	a, _ = NewAdapterWithTableName("mysql", "root:@tcp(127.0.0.1:3306)/", "test", "abc")
+	testSaveLoad(t, a)
+	testAutoSave(t, a)
+	testFilteredPolicy(t, a)
+	testAddPolicies(t, a)
+	testRemovePolicies(t, a)
+	testUpdatePolicies(t, a)
+	testUpdateFilteredPolicies(t, a)
 }
