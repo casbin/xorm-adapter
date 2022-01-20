@@ -54,6 +54,7 @@ type Adapter struct {
 	dbSpecified    bool
 	isFiltered     bool
 	engine         *xorm.Engine
+	tablePrefix    string
 	tableName      string
 }
 
@@ -112,11 +113,12 @@ func NewAdapter(driverName string, dataSourceName string, dbSpecified ...bool) (
 }
 
 // NewAdapterWithTableName  .
-func NewAdapterWithTableName(driverName string, dataSourceName string, tableName string, dbSpecified ...bool) (*Adapter, error) {
+func NewAdapterWithTableName(driverName string, dataSourceName string, tableName string, tablePrefix string, dbSpecified ...bool) (*Adapter, error) {
 	a := &Adapter{
 		driverName:     driverName,
 		dataSourceName: dataSourceName,
 		tableName:      tableName,
+		tablePrefix:    tablePrefix,
 	}
 
 	if len(dbSpecified) == 0 {
@@ -154,10 +156,11 @@ func NewAdapterByEngine(engine *xorm.Engine) (*Adapter, error) {
 }
 
 // NewAdapterByEngineWithTableName  .
-func NewAdapterByEngineWithTableName(engine *xorm.Engine, tableName string) (*Adapter, error) {
+func NewAdapterByEngineWithTableName(engine *xorm.Engine, tableName string, tablePrefix string) (*Adapter, error) {
 	a := &Adapter{
-		engine:    engine,
-		tableName: tableName,
+		engine:      engine,
+		tableName:   tableName,
+		tablePrefix: tablePrefix,
 	}
 
 	err := a.createTable()
@@ -166,6 +169,13 @@ func NewAdapterByEngineWithTableName(engine *xorm.Engine, tableName string) (*Ad
 	}
 
 	return a, nil
+}
+
+func (a *Adapter) getFullTableName() string {
+	if a.tablePrefix != "" {
+		return a.tablePrefix + "_" + a.tableName
+	}
+	return a.tableName
 }
 
 func (a *Adapter) createDatabase() error {
@@ -231,11 +241,11 @@ func (a *Adapter) open() error {
 }
 
 func (a *Adapter) createTable() error {
-	return a.engine.Sync2(&CasbinRule{tableName: a.tableName})
+	return a.engine.Sync2(&CasbinRule{tableName: a.getFullTableName()})
 }
 
 func (a *Adapter) dropTable() error {
-	return a.engine.DropTables(&CasbinRule{tableName: a.tableName})
+	return a.engine.DropTables(&CasbinRule{tableName: a.getFullTableName()})
 }
 
 func loadPolicyLine(line *CasbinRule, model model.Model) {
@@ -263,7 +273,7 @@ func loadPolicyLine(line *CasbinRule, model model.Model) {
 func (a *Adapter) LoadPolicy(model model.Model) error {
 	lines := make([]*CasbinRule, 0, 64)
 
-	if err := a.engine.Table(&CasbinRule{tableName: a.tableName}).Find(&lines); err != nil {
+	if err := a.engine.Table(&CasbinRule{tableName: a.getFullTableName()}).Find(&lines); err != nil {
 		return err
 	}
 
@@ -275,7 +285,7 @@ func (a *Adapter) LoadPolicy(model model.Model) error {
 }
 
 func (a *Adapter) genPolicyLine(ptype string, rule []string) *CasbinRule {
-	line := CasbinRule{PType: ptype, tableName: a.tableName}
+	line := CasbinRule{PType: ptype, tableName: a.getFullTableName()}
 
 	l := len(rule)
 	if l > 0 {
@@ -383,7 +393,7 @@ func (a *Adapter) RemovePolicies(sec string, ptype string, rules [][]string) err
 
 // RemoveFilteredPolicy removes policy rules that match the filter from the storage.
 func (a *Adapter) RemoveFilteredPolicy(sec string, ptype string, fieldIndex int, fieldValues ...string) error {
-	line := CasbinRule{PType: ptype, tableName: a.tableName}
+	line := CasbinRule{PType: ptype, tableName: a.getFullTableName()}
 
 	idx := fieldIndex + len(fieldValues)
 	if fieldIndex <= 0 && idx > 0 {
@@ -417,7 +427,7 @@ func (a *Adapter) LoadFilteredPolicy(model model.Model, filter interface{}) erro
 	}
 
 	lines := make([]*CasbinRule, 0, 64)
-	if err := a.filterQuery(a.engine.NewSession(), filterValue).Table(&CasbinRule{tableName: a.tableName}).Find(&lines); err != nil {
+	if err := a.filterQuery(a.engine.NewSession(), filterValue).Table(&CasbinRule{tableName: a.getFullTableName()}).Find(&lines); err != nil {
 		return err
 	}
 
@@ -516,7 +526,7 @@ func (a *Adapter) UpdateFilteredPolicies(sec string, ptype string, newPolicies [
 	for _, newRule := range newPolicies {
 		newP = append(newP, *a.genPolicyLine(ptype, newRule))
 	}
-	tx := a.engine.NewSession()
+	tx := a.engine.NewSession().Table(&CasbinRule{tableName: a.getFullTableName()})
 	defer tx.Close()
 
 	if err := tx.Begin(); err != nil {
@@ -528,7 +538,7 @@ func (a *Adapter) UpdateFilteredPolicies(sec string, ptype string, newPolicies [
 		if err := tx.Where(str, args...).Find(&oldP); err != nil {
 			return nil, tx.Rollback()
 		}
-		if _, err := tx.Where(str.(string), args...).Delete(CasbinRule{}); err != nil {
+		if _, err := tx.Where(str.(string), args...).Delete(&CasbinRule{tableName: a.getFullTableName()}); err != nil {
 			return nil, tx.Rollback()
 		}
 		if _, err := tx.Insert(&newP[i]); err != nil {
