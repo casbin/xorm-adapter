@@ -19,7 +19,7 @@ Based on [Xorm Drivers Support](https://gitea.com/xorm/xorm#drivers-support), Th
 
 ## Installation
 
-    go get github.com/casbin/xorm-adapter
+    go get github.com/casbin/xorm-adapter/v2
 
 ## Simple MySQL Example
 
