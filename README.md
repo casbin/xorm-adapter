@@ -10,7 +10,7 @@ Xorm Adapter is the [Xorm](https://gitea.com/xorm/xorm) adapter for [Casbin](htt
 Based on [Xorm Drivers Support](https://gitea.com/xorm/xorm#drivers-support), The current supported databases are:
 
 - Mysql: [github.com/go-sql-driver/mysql](https://github.com/go-sql-driver/mysql)
-- MyMysql: [github.com/ziutek/mymysql/godrv](https://github.com/ziutek/mymysql/godrv)
+- MyMysql: [github.com/ziutek/mymysql](https://github.com/ziutek/mymysql/tree/master/godrv)
 - Postgres: [github.com/lib/pq](https://github.com/lib/pq)
 - Tidb: [github.com/pingcap/tidb](https://github.com/pingcap/tidb)
 - SQLite: [github.com/mattn/go-sqlite3](https://github.com/mattn/go-sqlite3)
