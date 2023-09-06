@@ -41,7 +41,7 @@ func mockExecuteWithContextTimeOut(ctx context.Context, fn func() error) error {
 }
 
 func clearDBPolicy() (*casbin.Enforcer, *ContextAdapter) {
-	ca, err := NewContextAdapter("mysql", "root:root@tcp(127.0.0.1:3307)/")
+	ca, err := NewContextAdapter("mysql", "root:@tcp(127.0.0.1:3306)/")
 	if err != nil {
 		panic(err)
 	}
@@ -62,7 +62,7 @@ func clearDBPolicy() (*casbin.Enforcer, *ContextAdapter) {
 func TestContextAdapter_LoadPolicyCtx(t *testing.T) {
 	e, ca := clearDBPolicy()
 
-	engine, _ := xorm.NewEngine("mysql", "root:root@tcp(127.0.0.1:3307)/casbin")
+	engine, _ := xorm.NewEngine("mysql", "root:@tcp(127.0.0.1:3306)/casbin")
 	policy := &CasbinRule{
 		Ptype: "p",
 		V0:    "alice",
