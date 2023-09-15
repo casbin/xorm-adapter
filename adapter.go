@@ -358,8 +358,18 @@ func (a *Adapter) AddPolicy(sec string, ptype string, rule []string) error {
 func (a *Adapter) AddPolicies(sec string, ptype string, rules [][]string) error {
 	_, err := a.engine.Transaction(func(tx *xorm.Session) (interface{}, error) {
 		for _, rule := range rules {
+			var err error
+			var isLineExist bool
 			line := a.genPolicyLine(ptype, rule)
-			_, err := tx.InsertOne(line)
+			// check if the rule already exists, if it does, skip it
+			isLineExist, err = tx.Get(line)
+			if err != nil {
+				return nil, err
+			}
+			if isLineExist {
+				continue
+			}
+			_, err = tx.InsertOne(line)
 			if err != nil {
 				return nil, err
 			}
