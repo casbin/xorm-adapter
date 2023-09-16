@@ -17,6 +17,7 @@ package xormadapter
 import (
 	"errors"
 	"log"
+	"reflect"
 	"runtime"
 	"strings"
 
@@ -357,21 +358,34 @@ func (a *Adapter) AddPolicy(sec string, ptype string, rule []string) error {
 // AddPolicies adds multiple policy rule to the storage.
 func (a *Adapter) AddPolicies(sec string, ptype string, rules [][]string) error {
 	_, err := a.engine.Transaction(func(tx *xorm.Session) (interface{}, error) {
+		policiesToInsert := make([]*CasbinRule, 0, len(rules))
+		allPolicies := make([]*CasbinRule, 0, len(rules))
+		err := tx.Table(&CasbinRule{tableName: a.getFullTableName()}).Find(&allPolicies)
+		if err != nil {
+			return nil, err
+		}
+
+	loop:
 		for _, rule := range rules {
-			var err error
-			var isLineExist bool
 			line := a.genPolicyLine(ptype, rule)
-			// check if the rule already exists, if it does, skip it
-			isLineExist, err = tx.Get(line)
+			for _, policy := range allPolicies {
+				if reflect.DeepEqual(line, policy) {
+					continue loop
+				}
+
+			}
+			policiesToInsert = append(policiesToInsert, line)
+		}
+
+		if len(policiesToInsert) > 0 {
+			var c int64
+			c, err = tx.InsertMulti(policiesToInsert)
 			if err != nil {
 				return nil, err
 			}
-			if isLineExist {
-				continue
-			}
-			_, err = tx.InsertOne(line)
-			if err != nil {
-				return nil, err
+			if c == int64(0) {
+				log.Printf("AddPolicies: no policy was inserted")
+				return nil, nil
 			}
 		}
 		return nil, nil
