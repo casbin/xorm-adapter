@@ -361,7 +361,7 @@ func (a *Adapter) AddPolicy(sec string, ptype string, rule []string) error {
 func (a *Adapter) AddPolicies(sec string, ptype string, rules [][]string) error {
 	_, err := a.engine.Transaction(func(tx *xorm.Session) (interface{}, error) {
 		policiesToInsert := make([]*CasbinRule, 0, len(rules))
-		allPolicies := make([]*CasbinRule, 0, len(rules))
+		existingPolicies := make([]*CasbinRule, 0, len(rules))
 		condition := builder.NewCond()
 		for _, rule := range rules {
 			var conditionEq builder.Eq
@@ -372,7 +372,7 @@ func (a *Adapter) AddPolicies(sec string, ptype string, rules [][]string) error 
 			}
 			condition = condition.Or(conditionEq)
 		}
-		err := tx.Table(&CasbinRule{tableName: a.getFullTableName()}).Where(condition).Find(&allPolicies)
+		err := tx.Table(&CasbinRule{tableName: a.getFullTableName()}).Where(condition).Find(&existingPolicies)
 		if err != nil {
 			return nil, err
 		}
@@ -380,7 +380,7 @@ func (a *Adapter) AddPolicies(sec string, ptype string, rules [][]string) error 
 	loop:
 		for _, rule := range rules {
 			line := a.genPolicyLine(ptype, rule)
-			for _, policy := range allPolicies {
+			for _, policy := range existingPolicies {
 				if reflect.DeepEqual(line, policy) {
 					continue loop
 				}
