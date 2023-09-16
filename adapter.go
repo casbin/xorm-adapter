@@ -357,8 +357,22 @@ func (a *Adapter) AddPolicy(sec string, ptype string, rule []string) error {
 	return err
 }
 
+func getPTypeNameBasedOnDriver(driverName string) string {
+	switch driverName {
+	case "postgres":
+		return "p_type"
+	case "mysql":
+		return "ptype"
+	case "sqlite3":
+		return "ptype"
+	default:
+		return "p_type"
+	}
+}
+
 // AddPolicies adds multiple policy rule to the storage.
 func (a *Adapter) AddPolicies(sec string, ptype string, rules [][]string) error {
+	pTypeColumnName := getPTypeNameBasedOnDriver(a.driverName)
 	_, err := a.engine.Transaction(func(tx *xorm.Session) (interface{}, error) {
 		policiesToInsert := make([]*CasbinRule, 0, len(rules))
 		existingPolicies := make([]*CasbinRule, 0, len(rules))
@@ -366,7 +380,7 @@ func (a *Adapter) AddPolicies(sec string, ptype string, rules [][]string) error 
 		for _, rule := range rules {
 			var conditionEq builder.Eq
 			conditionEq = map[string]interface{}{}
-			conditionEq["p_type"] = ptype
+			conditionEq[pTypeColumnName] = ptype
 			for i := 0; i < len(rule); i++ {
 				conditionEq["v"+strconv.Itoa(i)] = rule[i]
 			}
