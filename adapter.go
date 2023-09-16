@@ -19,7 +19,9 @@ import (
 	"log"
 	"reflect"
 	"runtime"
+	"strconv"
 	"strings"
+	"xorm.io/builder"
 
 	"github.com/casbin/casbin/v2/model"
 	"github.com/casbin/casbin/v2/persist"
@@ -360,7 +362,17 @@ func (a *Adapter) AddPolicies(sec string, ptype string, rules [][]string) error 
 	_, err := a.engine.Transaction(func(tx *xorm.Session) (interface{}, error) {
 		policiesToInsert := make([]*CasbinRule, 0, len(rules))
 		allPolicies := make([]*CasbinRule, 0, len(rules))
-		err := tx.Table(&CasbinRule{tableName: a.getFullTableName()}).Find(&allPolicies)
+		condition := builder.NewCond()
+		for _, rule := range rules {
+			var conditionEq builder.Eq
+			conditionEq = map[string]interface{}{}
+			conditionEq["p_type"] = ptype
+			for i := 0; i < len(rule); i++ {
+				conditionEq["v"+strconv.Itoa(i)] = rule[i]
+			}
+			condition = condition.Or(conditionEq)
+		}
+		err := tx.Table(&CasbinRule{tableName: a.getFullTableName()}).Where(condition).Find(&allPolicies)
 		if err != nil {
 			return nil, err
 		}
