@@ -19,7 +19,7 @@ Based on [Xorm Drivers Support](https://gitea.com/xorm/xorm#drivers-support), Th
 
 ## Installation
 
-    go get github.com/casbin/xorm-adapter/v2
+    go get github.com/casbin/xorm-adapter/v3
 
 ## Simple MySQL Example
 
@@ -30,7 +30,7 @@ import (
 	"github.com/casbin/casbin/v2"
 	_ "github.com/go-sql-driver/mysql"
 
-	"github.com/casbin/xorm-adapter/v2"
+	"github.com/casbin/xorm-adapter/v3"
 )
 
 func main() {
@@ -70,7 +70,7 @@ import (
 	"github.com/casbin/casbin/v2"
 	_ "github.com/lib/pq"
 
-	"github.com/casbin/xorm-adapter/v2"
+	"github.com/casbin/xorm-adapter/v3"
 )
 
 func main() {
