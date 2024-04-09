@@ -106,11 +106,11 @@ func main() {
 `xormadapter` supports adapter with context, the following is a timeout control implemented using context
 
 ```go
-ca, _ := NewContextAdapter("mysql", "root:@tcp(127.0.0.1:3306)/", "casbin")
+a, _ := xormadapter.NewAdapter("mysql", "mysql_username:mysql_password@tcp(127.0.0.1:3306)/") // Your driver and data source. 
 // Limited time 300s
 ctx, cancel := context.WithTimeout(context.Background(), 300*time.Microsecond)
 defer cancel()
-err := ca.AddPolicyCtx(ctx, "p", "p", []string{"alice", "data1", "read"})
+err := a.AddPolicyCtx(ctx, "p", "p", []string{"alice", "data1", "read"})
 if err != nil {
     panic(err)
 }

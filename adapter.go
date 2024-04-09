@@ -15,6 +15,7 @@
 package xormadapter
 
 import (
+	"context"
 	"errors"
 	"log"
 	"runtime"
@@ -271,9 +272,14 @@ func loadPolicyLine(line *CasbinRule, model model.Model) {
 
 // LoadPolicy loads policy from database.
 func (a *Adapter) LoadPolicy(model model.Model) error {
+	return a.LoadPolicyCtx(context.Background(), model)
+}
+
+// LoadPolicyCtx loads policy from database.
+func (a *Adapter) LoadPolicyCtx(ctx context.Context, model model.Model) error {
 	lines := make([]*CasbinRule, 0, 64)
 
-	if err := a.engine.Table(&CasbinRule{tableName: a.getFullTableName()}).Find(&lines); err != nil {
+	if err := a.engine.Context(ctx).Table(&CasbinRule{tableName: a.getFullTableName()}).Find(&lines); err != nil {
 		return err
 	}
 
@@ -312,6 +318,11 @@ func (a *Adapter) genPolicyLine(ptype string, rule []string) *CasbinRule {
 
 // SavePolicy saves policy to database.
 func (a *Adapter) SavePolicy(model model.Model) error {
+	return a.SavePolicyCtx(context.Background(), model)
+}
+
+// SavePolicyCtx saves policy to database.
+func (a *Adapter) SavePolicyCtx(ctx context.Context, model model.Model) error {
 	err := a.dropTable()
 	if err != nil {
 		return err
@@ -342,15 +353,20 @@ func (a *Adapter) SavePolicy(model model.Model) error {
 		return nil
 	}
 
-	_, err = a.engine.Insert(&lines)
+	_, err = a.engine.Context(ctx).Insert(&lines)
 
 	return err
 }
 
 // AddPolicy adds a policy rule to the storage.
 func (a *Adapter) AddPolicy(sec string, ptype string, rule []string) error {
+	return a.AddPolicyCtx(context.Background(), sec, ptype, rule)
+}
+
+// AddPolicyCtx adds a policy rule to the storage.
+func (a *Adapter) AddPolicyCtx(ctx context.Context, sec string, ptype string, rule []string) error {
 	line := a.genPolicyLine(ptype, rule)
-	_, err := a.engine.InsertOne(line)
+	_, err := a.engine.Context(ctx).InsertOne(line)
 	return err
 }
 
@@ -371,8 +387,13 @@ func (a *Adapter) AddPolicies(sec string, ptype string, rules [][]string) error 
 
 // RemovePolicy removes a policy rule from the storage.
 func (a *Adapter) RemovePolicy(sec string, ptype string, rule []string) error {
+	return a.RemovePolicyCtx(context.Background(), sec, ptype, rule)
+}
+
+// RemovePolicyCtx removes a policy rule from the storage.
+func (a *Adapter) RemovePolicyCtx(ctx context.Context, sec string, ptype string, rule []string) error {
 	line := a.genPolicyLine(ptype, rule)
-	_, err := a.engine.Delete(line)
+	_, err := a.engine.Context(ctx).Delete(line)
 	return err
 }
 
@@ -393,6 +414,11 @@ func (a *Adapter) RemovePolicies(sec string, ptype string, rules [][]string) err
 
 // RemoveFilteredPolicy removes policy rules that match the filter from the storage.
 func (a *Adapter) RemoveFilteredPolicy(sec string, ptype string, fieldIndex int, fieldValues ...string) error {
+	return a.RemoveFilteredPolicyCtx(context.Background(), sec, ptype, fieldIndex, fieldValues...)
+}
+
+// RemoveFilteredPolicyCtx removes policy rules that match the filter from the storage.
+func (a *Adapter) RemoveFilteredPolicyCtx(ctx context.Context, sec string, ptype string, fieldIndex int, fieldValues ...string) error {
 	line := CasbinRule{Ptype: ptype, tableName: a.getFullTableName()}
 
 	idx := fieldIndex + len(fieldValues)
@@ -415,7 +441,7 @@ func (a *Adapter) RemoveFilteredPolicy(sec string, ptype string, fieldIndex int,
 		line.V5 = fieldValues[5-fieldIndex]
 	}
 
-	_, err := a.engine.Delete(&line)
+	_, err := a.engine.Context(ctx).Delete(&line)
 	return err
 }
 
