@@ -37,13 +37,13 @@ func (the *CasbinRule) TableName() string {
 
 // CasbinRule  .
 type CasbinRule struct {
-	Ptype string `xorm:"varchar(100) index not null default ''"`
-	V0    string `xorm:"varchar(100) index not null default ''"`
-	V1    string `xorm:"varchar(100) index not null default ''"`
-	V2    string `xorm:"varchar(100) index not null default ''"`
-	V3    string `xorm:"varchar(100) index not null default ''"`
-	V4    string `xorm:"varchar(100) index not null default ''"`
-	V5    string `xorm:"varchar(100) index not null default ''"`
+	Ptype string `xorm:"varchar(100) index(IF NOT EXISTS) not null default ''"`
+	V0    string `xorm:"varchar(100) index(IF NOT EXISTS) not null default ''"`
+	V1    string `xorm:"varchar(100) index(IF NOT EXISTS) not null default ''"`
+	V2    string `xorm:"varchar(100) index(IF NOT EXISTS) not null default ''"`
+	V3    string `xorm:"varchar(100) index(IF NOT EXISTS) not null default ''"`
+	V4    string `xorm:"varchar(100) index(IF NOT EXISTS) not null default ''"`
+	V5    string `xorm:"varchar(100) index(IF NOT EXISTS) not null default ''"`
 
 	tableName string `xorm:"-"`
 }
